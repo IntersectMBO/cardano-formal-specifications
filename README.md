@@ -30,3 +30,6 @@ Other Documents:
 
 ## Plutus specifications
 
+The metatheory linked above is an Agda specification of both the typed and untyped layers of the Plutus Core language, and includes a specification for the CEK machine which evaluates them. 
+
+Additionally, there is the "[paper](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)" specification document which definies the language elements, and has denotational semantics for each of the supported builtin operations. 
