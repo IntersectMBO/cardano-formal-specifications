@@ -8,6 +8,8 @@ This repository is used to collect various formal methods projects on Cardano. I
 | Ledger Specification    | https://github.com/IntersectMBO/formal-ledger-specifications                 |
 | Plutus Metatheory       | https://github.com/IntersectMBO/plutus/tree/master/plutus-metatheory         |
 
+## Consensus specifications
+
 ## Ledger specifications
 
 Beside the specifications in the above repository, there are older specification documents for the eras before Conway. They can be found here:
@@ -25,3 +27,6 @@ Other Documents:
 - [Non-integer calculations specification](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/non-integer-calculations.pdf): details on the parts of the Shelley specification that use real numbers.
 - [Stake pool ranking specification](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/pool-ranking.pdf): details for a robust stake pool ranking mechanism.
 - [Explanation of the small-step-semantics framework](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/small-step-semantics.pdf): a guide to the notation and style used by our ledger rules.
+
+## Plutus specifications
+
