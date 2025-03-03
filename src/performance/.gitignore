@@ -1,0 +1,9 @@
+*.tex
+*.pdf
+*.log
+*.aux
+*.lof
+*.toc
+*.lot
+*.out
+*.ptb
