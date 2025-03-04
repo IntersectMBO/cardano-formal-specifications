@@ -1,7 +1,8 @@
 # Cardano Formal Specifications
 
 This repository is used to provide a top level entry point to the full
-collection of formal specifications for Cardano.
+collection of formal specifications for Cardano for current and future
+features.
 
 Most specifications are in their own repositories which we link to
 below. The Cardano performance model will be in this repo. In the
@@ -10,31 +11,37 @@ would combine the Consensus and Ledger specifications and prove
 combined properties about them that cannot be stated or proven about
 either of them alone.
 
-This readme is in two sections: section one is a table of contents listing all the areas the specifications cover; section two goes into more detail about each area with links to pdf artifacts, and source repositories.
-
+This readme is in three sections: section one is a table of contents
+listing all the areas the specifications cover; section two goes into
+more detail about the current state of the system and each component
+with links to pdf artifacts, and source repositories; section three
+covers new features that are currently in the R&D phase.
 
 # Table of Contents
 
-| Project                                          | Link                                                                                                                       |
-|--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| Plutus Core                                      | https://github.com/IntersectMBO/plutus/tree/master/plutus-metatheory                                                       |
-| Ledger Specification                             |                                                                |
-| Consensus Specification (Block Header) [^1] [^2] | https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-fdee8d65f730471bd62e2177650a579d.pdf https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec |
-| Networking                                       | https://github.com/IntersectMBO/plutus/tree/master/plutus-metatheory                                                       |
-| Performance model                                |                                                                                                                            |
+| Components  |
+|-------------|
+| Plutus Core |
+| Ledger      |
+| Consensus   |
+| Networking  |
 
-
-[^1]: The block header specification is executable and usable for conformance testing.
-
-[^2]: A formal model of Ouroboros Praos and its corresponding proofs of safety and liveness are currently WIP, see https://github.com/input-output-hk/ouroboros-praos-formal-spec.
-
+| New features |
+|--------------|  
+| Babel fees   |
+| Peras        |
+| Leios        |
 
 # Cardano Specifications
 
 The Cardano Specifications are intended to provide language agnostic
-single source of truth formal specifications for key components of the
+single-source-of-truth reference for key components of the
 system. The are intended to communicate how the system works to
 implementors and researchers and technical community members.
+
+A second important use beyond a reference of how the system is now is
+to provide a baseline and communication medium for considering changes
+to the sysetm.
 
 The specifications are presented in formal notation using computer
 science concepts familiar to somebody who has completed a the first
@@ -56,9 +63,10 @@ properties about the design and have these formally verified.
 
 Plutus has two specifications:
 
-1. The metatheory linked above is an Agda specification of both the
-typed and untyped layers of the Plutus Core language, and includes a
-specification for the CEK machine which evaluates them.
+1. The [metatheory](https://github.com/IntersectMBO/plutus/tree/master/plutus-metatheory)
+is an Agda specification of both the typed and untyped layers of the
+Plutus Core language, and includes a specification for the CEK machine
+which evaluates them.
 
 2. Additionally, there is the
 "[paper](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)"
@@ -123,14 +131,37 @@ Other Documents:
 
 ### Testing
 
+The ledger specification is actively used for conformance testing. As
+more previous era features are added more coverage will be possible.
+
 ## Consensus specifications
 
 The consensus specification is a relatively new effort that in the
 first instance focusses on block headers. This is essentially the part
 of the chain that the consensus layer cares about.
 
-In addition a formalisation of the Praos protocol and its safety proof is underway.
+Generated PDF file:
+https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-fdee8d65f730471bd62e2177650a579d.pdf
+
+Source repository:
+https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec
+
+A formal model of Ouroboros Praos and its corresponding proofs of
+safety and liveness are currently WIP, see
+https://github.com/input-output-hk/ouroboros-praos-formal-spec.
 
 ### Properties
 
 ### Testing
+
+The block header specification is executable and usable for conformance testing.
+
+## Performance model
+
+This repository includes a subdirectory src/performance that contains
+a literate Haskell file that documents a performance model of Cardano
+block diffusion. This is intended to provide a baseline from which the
+potential consequences of parameter or design changes on the
+timeliness of block diffusion can be investigated.
+
+# New features
