@@ -4,7 +4,8 @@
 %\graphicspath{ {./Inserts/}}
 \usepackage{array,multirow,subfig,hyperref,booktabs}
 \usepackage[english]{babel}
-\usepackage[utf8]{inputenc}
+\usepackage[utf8x]{inputenc}
+\usepackage[mathletters]{ucs}
 \usepackage[en-GB]{datetime2}
 \usepackage{amsmath,amssymb,dsfont,wasysym,stmaryrd,mathrsfs,turnstile,cancel,graphicx,mathtools,listings,caption,xcolor,calligra,chemarrow}
 % Local definitions
@@ -531,5 +532,6 @@ and node $Z$ is the next block producer):
 The granting of permission to send the next header is not on the critical path for delivering the block from $A$ to $Z$, so 
 we will omit it here for simplicity.
 
-\bibliography{Inserts/DeltaQBibliography.bib,Inserts/AdditionalEntries.bib}
+\bibliographystyle{plain}
+\bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
 \end{document}
