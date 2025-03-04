@@ -37,3 +37,7 @@ Other Documents:
 The metatheory linked above is an Agda specification of both the typed and untyped layers of the Plutus Core language, and includes a specification for the CEK machine which evaluates them. 
 
 Additionally, there is the "[paper](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)" specification document which definies the language elements, and has denotational semantics for each of the supported builtin operations. 
+
+## Performance model
+
+This repository includes a subdirectory src/performance that contains a literate Haskell file that documents a performance model of Cardano block diffusion. This is intended to provide a baseline from which the potential consequences of parameter or design changes on the timeliness of block diffusion can be investigated. 
