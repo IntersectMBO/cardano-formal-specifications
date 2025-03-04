@@ -6,5 +6,9 @@ A pdf document of the performance model can be generated using the following com
 1. Execute the cabal project using `cabal run` from the `src/performance` directory (generates a number of pdf files in the `Inserts` subdirectory)
 2. `cd app` 
 3. `lhs2TeX PraosModel.lhs > PraosModel.tex`   
-4. `pdflatex PraosModel.tex` (note: this step may need to be repeated for the list of contents, figures and tables to render correctly)
+4. `pdflatex PraosModel.tex` 
+5. `bibtex PraosModel`
+6. `pdflatex PraosModel.tex`
+78. `pdflatex PraosModel.tex`
+(note: the repetition of `pdflatex` is needed for the contents, figures, tables and citations to render correctly)
 This generates a file `PraosModel.pdf`
