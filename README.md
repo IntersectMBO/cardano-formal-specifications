@@ -5,7 +5,7 @@ collection of formal specifications for Cardano for current and future
 features.
 
 Most specifications are in their own repositories which we link to
-below. The Cardano performance model will be in this repo. In the
+below. The Cardano performance model will be is in this repo. In the
 future it may also house a 'Cardano Node properties' library, which
 would combine the Consensus and Ledger specifications and prove
 combined properties about them that cannot be stated or proven about
@@ -13,9 +13,9 @@ either of them alone.
 
 This readme is in three sections: section one is a table of contents
 listing all the areas the specifications cover; section two goes into
-more detail about the current state of the system and each component
+more detail about the current state of each component of the node,
 with links to pdf artifacts, and source repositories; section three
-covers new features that are currently in the R&D phase.
+covers new features for Cardano that are currently in the R&D phase.
 
 # Table of Contents
 
@@ -35,17 +35,17 @@ covers new features that are currently in the R&D phase.
 
 # Cardano Specifications
 
-The Cardano Specifications are intended to provide language agnostic
+The Cardano Specifications are intended to provide a language agnostic
 single-source-of-truth reference for key components of the
 system. The are intended to communicate how the system works to
-implementors and researchers and technical community members.
+implementors, innovators, and technical community members.
 
 A second important use beyond a reference of how the system is now is
-to provide a baseline and communication medium for considering changes
-to the sysetm.
+to provide a baseline and communication medium for developing new
+feastures.
 
 The specifications are presented in formal notation using computer
-science concepts familiar to somebody who has completed a the first
+science concepts familiar to somebody who has completed the first
 year of a undergradate computer science course or who has equivalent
 professional experience.
 
@@ -88,7 +88,7 @@ uplc implementation built by RV.
 
 ## Ledger specifications
 
-The ledger is our biggest and longest running project.
+The ledger is our biggest and longest running specification project.
 
 We have specifications going all the way back to Byron and the whole
 system up to the present Conway era is covered.
@@ -155,9 +155,10 @@ https://github.com/input-output-hk/ouroboros-praos-formal-spec.
 
 ### Testing
 
-# Networking specifications
-
 The block header specification is executable and usable for conformance testing.
+
+## Networking specifications
+
 
 ## Performance model
 
@@ -168,3 +169,9 @@ potential consequences of parameter or design changes on the
 timeliness of block diffusion can be investigated.
 
 # New features
+
+## Babel fees
+
+## Peras
+
+## Leios
