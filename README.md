@@ -4,7 +4,7 @@ This repository is used to collect various formal methods projects on Cardano. I
 
 | Project                                          | Link                                                                                                                       |
 |--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| Consensus Specification (Block Header) [^1] [^2] | https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-fdee8d65f730471bd62e2177650a579d.pdf |
+| Consensus Specification (Block Header) [^1] [^2] | https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-fdee8d65f730471bd62e2177650a579d.pdf https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec |
 | Ledger Specification                             | https://github.com/IntersectMBO/formal-ledger-specifications                                                               |
 | Plutus Metatheory                                | https://github.com/IntersectMBO/plutus/tree/master/plutus-metatheory                                                       |
 
