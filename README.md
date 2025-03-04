@@ -21,10 +21,11 @@ covers new features that are currently in the R&D phase.
 
 | Components  |
 |-------------|
-| Plutus Core |
-| Ledger      |
-| Consensus   |
-| Networking  |
+| [Plutus Core](#plutus-specifications) |
+| [Ledger](#ledger-specifications) |
+| [Consensus](#consensus-specifications) |
+| [Networking](#networking-specifications) |
+| [Performance model](#performance-model) |
 
 | New features |
 |--------------|  
@@ -120,7 +121,7 @@ Allegra | Same as Mary era below | Same as Mary era below | [CDDL](https://githu
 Mary | [Multi-Currency](https://eprint.iacr.org/2020/895 "Multi-Currency Ledgers"), [UTXOma](https://iohk.io/en/research/library/papers/utxoma-utxo-with-multi-asset-support/ "UTXOma:UTXO with Multi-Asset Support") | [Spec](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/mary-ledger.pdf "A Formal Specification of the Cardano Ledger with a Native Multi-Asset Implementation") | [CDDL](https://github.com/intersectmbo/cardano-ledger/tree/master/eras/mary/impl/cddl-files)
 Alonzo | [eUTXO](https://iohk.io/en/research/library/papers/the-extended-utxo-model/ "The Extended UTXO Model")| [Spec](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/alonzo-ledger.pdf "A Formal Specification of the Cardano Ledger integrating Plutus Core") | [CDDL](https://github.com/intersectmbo/cardano-ledger/tree/master/eras/alonzo/impl/cddl-files)
 Babbage | [batch-verification](https://iohk.io/en/research/library/papers/on-uc-secure-range-extension-and-batch-verification-for-ecvrf/ "On UC-Secure Range Extension and Batch Verification for ECVRF"), [CIP-31](https://github.com/cardano-foundation/CIPs/pull/159 "Reference inputs"), [CIP-32](https://github.com/cardano-foundation/CIPs/pull/160 "Inline datums"), [CIP-33](https://github.com/cardano-foundation/CIPs/pull/161 "Reference scripts") | [Spec](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/babbage-ledger.pdf "Formal Specification of the Cardano Ledger for the Babbage era") | [CDDL](https://github.com/intersectmbo/cardano-ledger/tree/master/eras/babbage/impl/cddl-files)
-| Conway | https://github.com/IntersectMBO/formal-ledger-specifications |
+| Conway | | https://github.com/IntersectMBO/formal-ledger-specifications |
 
 Other Documents:
 - [Non-integer calculations specification](https://github.com/intersectmbo/cardano-ledger/releases/latest/download/non-integer-calculations.pdf): details on the parts of the Shelley specification that use real numbers.
@@ -153,6 +154,8 @@ https://github.com/input-output-hk/ouroboros-praos-formal-spec.
 ### Properties
 
 ### Testing
+
+# Networking specifications
 
 The block header specification is executable and usable for conformance testing.
 
