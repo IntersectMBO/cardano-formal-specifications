@@ -1,0 +1,12 @@
+*.tex
+*.pdf
+*.log
+*.aux
+*.lof
+*.toc
+*.lot
+*.out
+*.ptb
+*.bbl
+*.blg
+dist-newstyle

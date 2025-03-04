@@ -1,0 +1,537 @@
+\documentclass[oneside,11pt]{article}
+\usepackage[a4paper, portrait, margin=2.5cm]{geometry}
+%include polycode.fmt
+%\graphicspath{ {./Inserts/}}
+\usepackage{array,multirow,subfig,hyperref,booktabs}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[mathletters]{ucs}
+\usepackage[en-GB]{datetime2}
+\usepackage{amsmath,amssymb,dsfont,wasysym,stmaryrd,mathrsfs,turnstile,cancel,graphicx,mathtools,listings,caption,xcolor,calligra,chemarrow}
+% Local definitions
+\usepackage[most]{tcolorbox}
+\makeatletter
+\newcommand{\labitem}[2]{%
+\def\@itemlabel{\textbf{#1.}}
+\item
+\def\@currentlabel{#1}\label{#2}}
+\makeatother
+
+\newcommand{\dq}{\ensuremath{\Delta{}\textrm{Q}}}
+\newcommand{\DeltaQ}[1]{\ensuremath{\Delta{}\textrm{Q}_{\vert{}#1}}}
+\newcommand{\dqG}{\DeltaQ{G}}
+\newcommand{\dqS}{\DeltaQ{S}}
+\newcommand{\dqV}{\DeltaQ{V}}
+\newcommand{\dqGS}{\DeltaQ{G,S}}
+\newcommand{\dqGSV}{\DeltaQ{G,S,V}}
+\newcommand{\maxdq}{\ensuremath{\left\lceil\Delta{}\textrm{Q}\right\rceil}}
+\newcommand{\dqsd}{\dq{}SD}
+
+\newcommand{\BlackBox}{\ensuremath{\flat}}
+\newcommand{\SeqDelta}{\ensuremath{\mathbin{\bullet \hspace{-.6em} \rightarrow \hspace{-.85em} - \hspace{-.15em} \bullet}}}
+\newcommand{\ProbChoice}[2]{\ensuremath{\mathbin{\substack{#1 \\ {\displaystyle \leftrightharpoons} \\ #2}}}}
+\newcommand{\DenSem}[1]{\ensuremath{[\hspace{-0.25em}[#1]\hspace{-0.25em}]}}
+\newcommand{\Hazard}[2]{\ensuremath{\mathsf{hazard}_{#1}(#2)}}
+\newcommand{\Slack}[2]{\ensuremath{\mathsf{slack}_{#1}(#2)}}
+\newcommand{\AllOVs}{\ensuremath{\mathbb{O}_v}}
+\newcommand{\Base}{\ensuremath{\overline{\mathbb{B}}}}
+\newcommand{\NamedSem}[2]{\ensuremath{#1\DenSem{#2}}}
+\newcommand{\DQAnalysis}[2]{\ensuremath{\NamedSem{\dq{}}{#1}}_{#2}}
+\newcommand{\Resources}{\ensuremath{\mathbb{H}}}
+\newcommand{\AmountOfWorkFor}[1]{\ensuremath{#1 \dststile{}{W}}}
+\newcommand{\LoadAnalysis}[3]{\ensuremath{\AmountOfWorkFor{#1} \NamedSem{S}{#2}_{#3}}}
+\newcommand{\SmallSeqDelta}{\ensuremath{\mathbin{\bullet \hspace{-.2em} \rightarrow \hspace{-.25em} - \hspace{-.15em} \bullet}}}
+\newcommand{\MultiSeq}[2]{\ensuremath{\substack{\SmallSeqDelta \\ \SmallSeqDelta}_{#1}^{#2}\ }}
+\newcommand{\MultiToFinish}[1]{\ensuremath{\mathopen{\parallel^{#1}}}}
+\newcommand{\MultiFTF}{\MultiToFinish{\exists}}
+\newcommand{\MultiATF}{\MultiToFinish{\forall}}
+\newcommand{\Conv}{\mathop{\scalebox{1.5}{\raisebox{-0.2ex}{$\ast$}}}}
+
+\definecolor{UnicornMilkCol}{rgb}{0.96,0.95,0.76}
+\definecolor{SteelBlueCol}{rgb}{0.27,0.50,0.70}
+\definecolor{SlateGrey}{rgb}{0.43,0.5,0.56}
+\definecolor{DarkNavy}{rgb}{0.15, 0.25, 0.34}
+\definecolor{purple}{rgb}{.5,.0,.5}
+\newcommand{\Purple}[1]
+{\textcolor{purple}{#1}}
+\newcommand\rulefont[1]{\ensuremath{\Purple{\bf (\textsc{#1})}}}
+\newcommand{\ActiveBox}[1]{\colorbox{UnicornMilkCol}{\ensuremath{#1}}}
+\newtcolorbox{statementbox}[2][]{
+  colback=black!5!white,
+  colframe=black!75!black,
+  colbacktitle=black!85!black,enhanced,
+  attach boxed title to top center={yshift=-2mm},
+  title={#2},#1
+}
+\title{Modelling Block Diffusion in Cardano using \dq{}}
+\author{Peter Thompson\\Predictable Network Solutions Ltd.}
+\date{February 2025}
+
+\begin{document}
+\maketitle
+%if False
+\begin{code}
+{-# LANGUAGE FlexibleContexts #-}
+module PraosModel 
+    (   -- export the cdf plots
+        oneHopCDF,
+        multiHopCDF64k,
+        multiHopCDF1024k,
+        blendedHopCDFNode10,
+        blendedHopCDFNode10'
+    )
+where
+import DeltaQ
+import Graphics.Rendering.Chart (Layout)
+\end{code}
+%endif
+\tableofcontents
+\listoffigures
+\listoftables
+\section{Introduction}
+Ouroboros Praos uses the distribution of `stake' in the system (i.e. the value of ADA 
+controlled by each node) to randomly determine which node (if any) is authorised to 
+produce a new block in the chain during a specific time interval (a `slot');
+the more stake a node controls, the more likely it is to be authorised to produce a block.
+It is important that the selected block-producing node has a copy of the 
+most recently produced block, so that the new block can correctly extend the previous chain,
+otherwise there is a fork in the chain, meaning that at least one of the blocks will be discarded, wasting work.
+Since the block producer is selected at random, this means that the previous block needs to 
+have been copied to \emph{all} block-producing nodes; we call this process `block diffusion'. 
+For robustness, the consensus algorithm is designed to withstand some 
+imperfections in block diffusion, hence the effective requirement is that blocks should
+be well-diffused ``sufficiently often''.
+Put another way, the probability that a block fails to arrive in time for
+the production of the next block must be suitably bounded. 
+The engineering challenge is to quantify this probability as a function of the design and of the
+parameter choices of the implementation.
+
+\section{Formulating the Problem}
+We assume that a collection of blockchain nodes is assembled into a random graph (randomness is important in
+a blockchain setting for mitigating certain adversarial behaviours).
+In each time slot, a randomly-chosen node may generate a block, and we are interested in 
+the probability that the next randomly-chosen node has received that block before it generates the 
+next block. Since the granting of permission to generate a block is random, the time between
+block generations is exponentially distributed.
+In Cardano, slots are one second long and blocks are produced every $20$ seconds on average.
+
+\vspace{24pt}
+
+\begin{statementbox}[colback=white]{Problem Statement}
+Starting from blockchain node $A$, what is the probability distribution of the time
+taken for a block to reach a different node $Z$, when $A$ and $Z$ are picked at random from the graph?
+\end{statementbox}
+\vspace{24pt}
+
+\noindent
+Since the graph is random with some limited node degree $N$, there is a strong chance that
+$A$ is not directly connected to $Z$, and so the block will have to pass through a sequence
+of intermediate nodes $B$, $C$, \dots 
+The length of this sequence is a function of the size and node degree of the graph \cite{small-worlds},
+and the (distribution of) time to forward a block directly from one node to another is known (e.g., by measurement).
+
+\section{Modelling the Problem}
+Suppose for a moment that there are two hops to make from $A$ to $Z$:
+first from $A$ to an intermediate node $B$; and, then, from $B$ to $Z$.
+Using the \dqsd{} notation from \cite{computers11030045}, we can write 
+the corresponding outcome expression as $o_{A \rightsquigarrow B} \SeqDelta o_{B \rightsquigarrow Z}$, 
+where ``\SeqDelta" is the symbol we use for \textit{sequential composition}:
+it means that the outcome $o_{A}$ is followed by the outcome $o_{B}$.
+Likewise, the outcome expression for three hops is 
+$o_{A \rightsquigarrow B} \SeqDelta o_{B \rightsquigarrow C} \SeqDelta o_{C \rightsquigarrow Z}$.
+Generalising that to $n$ hops then is easy: 
+$o_{A \rightsquigarrow B_1} \SeqDelta o_{B_1 \rightsquigarrow B_2} \SeqDelta \dots \SeqDelta o_{B_n \rightsquigarrow Z}$, 
+which we abbreviate as 
+$o_{A \rightsquigarrow B_1} \SeqDelta (\MultiSeq{1}{n - 1}o_{B_i \rightsquigarrow B_{i + 1}}) \SeqDelta o_{B_n \rightsquigarrow Z}$.
+
+Consider the two-hop scenario.
+Provided that we have \dq{}s for both $o_{A \rightsquigarrow B}$ and 
+$o_{B \rightsquigarrow Z}$, they can work out the \dq{}\ of $o_{A \rightsquigarrow B} \SeqDelta o_{B \rightsquigarrow Z}$, 
+which is the convolution of the two constituent \dq{}s:
+$$
+  \dq{}(o_{A \rightsquigarrow B} \SeqDelta o_{B \rightsquigarrow Z}) = \dq{}(o_{A \rightsquigarrow B}) \ast \dq{}(o_{B \rightsquigarrow Z})\text{.}
+$$
+Using the \textit{deltaq} package\footnote{\url{https://hackage.haskell.org/package/deltaq}}, 
+we can compute the convolution of two \dq{}s using the {\tt .>>.} operator.
+
+In practice, the time to transfer a block of data one hop depends on four main factors:
+\begin{enumerate}
+    \item The size of the block;
+    \item The speed of the network interface;
+    \item The geographical distance of the hop (as measured by the time to deliver a single packet);
+    \item Congestion along the network path.
+\end{enumerate}
+When we consider blockchain nodes that are located in data centres (which most block producers tend to be), the
+interface speed will typically be 1Gb/s or more, which is not a significant limiting factor in these circumstances.
+Likewise, congestion is generally minimal, and so this can also be ignored in the first instance.
+This leaves: i) block size, which we will take as a design parameter to be investigated later; 
+and ii) distance, which we will consider now.
+%
+For simplicity, we will consider three cases of geographical distance:
+\begin{description}
+    \item [Short]: the two nodes are located in the same data centre;
+    \item [Medium]: the two nodes are located in the same continent;
+    \item [Long]: the two nodes are located in different continents.
+\end{description}
+Cardano relies on the standard TCP protocol for data transfers, because it is widely 
+supported on different platforms and can penetrate firewalls. 
+TCP transforms loss into additional delay, so the residual loss is negligible.
+At this point, we could descend into a detailed refinement of the TCP protocol, but equally 
+we could simply take measurements; the compositionality of \dqsd{} means that it makes no difference
+where the underlying values come from. 
+Table \ref{tab:one-hop-dq} shows measurements of the transit time of packets and 
+the corresponding 
+transfer time of blocks of various sizes, using hosts running on AWS data centre servers 
+in Oregon, Virginia, London, Ireland and Sydney.
+Since we know that congestion is minimal in this setting, the spread of values will be negligible, 
+and so in this case the CDFs for the \dq{}s will be step functions.
+The transfer time for each block size is given both in seconds and in multiples of the basic
+round-trip time (RTT) between the hosts in question. 
+Since the TCP protocol relies on the arrival of acknowledgements to permit the transmission of more
+data, it is unsurprising to see a broadly linear relationship, which could be confirmed by a
+more detailed refinement of the details of the protocol. 
+
+\begin{table}[htb]
+\begin{tabular}{lrrrrrrrrrrr}\toprule
+& RTT & \multicolumn{2}{c}{64kB} & \multicolumn{2}{c}{256kB} &  \multicolumn{2}{c}{512kB} & \multicolumn{2}{c}{1024kB} & \multicolumn{2}{c}{2048kB} \\
+Distance          & \multicolumn{1}{r}{secs} & \multicolumn{1}{l}{secs} & \multicolumn{1}{l}{RTTs} & \multicolumn{1}{l}{secs} & \multicolumn{1}{r}{RTTs} & \multicolumn{1}{l}{secs} & \multicolumn{1}{r}{RTTs} & \multicolumn{1}{l}{secs} & \multicolumn{1}{r}{RTTs} & \multicolumn{1}{l}{secs} & \multicolumn{1}{r}{RTTs} \\ \midrule
+\textbf{Short}     & 0.012                        & 0.024                    & \textit{1.95}            & 0.047                     & \textit{3.81}            & 0.066                     & \textit{5.41}            & 0.078                      & \textit{6.36}            & 0.085                      & \textit{6.98}             \\
+\textbf{Medium} & 0.069                        & 0.143                    & \textit{2.07}            & 0.271                     & \textit{3.94}            & 0.332                     & \textit{4.82}            & 0.404                      & \textit{5.87}            & 0.469                      & \textit{6.81}             \\
+\textbf{Long}      & 0.268                        & 0.531                    & \textit{1.98}            & 1.067                     & \textit{3.98}            & 1.598                     & \textit{5.96}            & 1.598                      & \textit{5.96}            & 1.867                      & \textit{6.96}             \\ \bottomrule
+\end{tabular}
+\caption{Representative times in seconds and round-trip-times (RTTs) for one-way TCP transmission of varying block sizes for short, medium and long distances between blockchain nodes.}
+\label{tab:one-hop-dq}
+\end{table}
+
+We can encode the contents of Table \ref{tab:one-hop-dq} using the as follows:
+\begin{code}
+data BlockSize = B64 | B256 | B512 | B1024 | B2048
+    deriving (Show, Eq)
+blockSizes :: [BlockSize]
+blockSizes = [B64, B256, B512, B1024, B2048]
+short :: BlockSize -> DQ
+short B64     = wait 0.024
+short B256    = wait 0.047
+short B512    = wait 0.066
+short B1024   = wait 0.078
+short B2048   = wait 0.085
+medium :: BlockSize -> DQ
+medium B64    = wait 0.143
+medium B256   = wait 0.271
+medium B512   = wait 0.332
+medium B1024  = wait 0.404
+medium B2048  = wait 0.469
+long :: BlockSize -> DQ
+long B64      = wait 0.531
+long B256     = wait 1.067
+long B512     = wait 1.598
+long B1024    = wait 1.598
+long B2048    = wait 1.867
+\end{code}
+
+If we assume that a direct TCP/IP connection between nodes has an equal probability of being short,
+medium, or long, the probability distribution of delay times for a single hop is
+\begin{code}
+hop :: BlockSize -> DQ
+hop b = choices [(1, short b), (1, medium b), (1, long b)]
+\end{code}
+
+We can then plot the CDF of the delay times for a single hop, shown in Figure \ref{fig:one-hop-delays}:
+\begin{code}
+oneHopCDF :: Layout Double Double
+oneHopCDF = plotCDFs "" (zip (map show blockSizes) (map hop blockSizes))
+\end{code}
+\begin{figure}[htb]
+  \centering
+        \includegraphics[width=0.7\textwidth]{Inserts/oneHopDelays.pdf}
+  \caption{One-Hop Delay Distributions per Block Size}
+  \label{fig:one-hop-delays}
+\end{figure}
+The sequential compostion of a series of outcomes is given by the \dq{} operation of \textit{sequential composition}:
+\begin{code}
+doSequentially :: [DQ] -> DQ
+doSequentially = foldr (.>>.) (wait 0)
+\end{code}
+The distribution of delay times for a sequence of $n$ hops is then:
+
+\begin{code}
+hops :: Int -> BlockSize -> DQ
+hops n b = doSequentially (replicate n (hop b))
+\end{code}
+Figure \ref{fig:multi-hop-64k} shows the result of applying this to 
+the sequence of outcome expressions corresponding to one, two, \dots five sequential hops
+using the transfer delay distribution shown in Figure~\ref{fig:one-hop-delays}, for a
+64kB block size, and Figure~\ref{fig:multi-hop-1024k} similarly for a 1024k block size
+(note the difference in timescales between the two plots). 
+In code this is:
+\begin{code}
+hopRange :: [Int]
+hopRange = [1..5]
+multiHopCDF64k :: Layout Double Double
+multiHopCDF64k = plotCDFs "" (zip (map show hopRange) (map (`hops` B64) hopRange))
+multiHopCDF1024k :: Layout Double Double
+multiHopCDF1024k = plotCDFs "" (zip (map show hopRange) (map (`hops` B1024) hopRange))
+\end{code}
+It can be seen that there is a $95\%$ probability of the block arriving within $2$s for a 64k block,
+wheras for a $1024$kB block size the $95^\mathit{th}$ percentile of transfer time is more than $5$s.
+
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/multi-hop64k-plots}
+  \caption{Multi-Hop Delay Distributions for $64$k Block Size}
+  \label{fig:multi-hop-64k}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/multi-hop-1024k-plots}
+  \caption{Multi-Hop Delay Distributions for $1024$k Block Size}
+  \label{fig:multi-hop-1024k}
+\end{figure}
+
+If we know the distribution of expected path lengths, we can combine the \dq{}s for
+different hop counts using the \dq{} operation of probabilistic choice. 
+Table \ref{tab:path-lengths} shows the distribution of
+paths lengths in simulated random graphs having 2500 nodes and a variety of node degrees \cite{path-lengths}.
+Using the path length distribution for nodes of degree 10, for example, then gives the transfers delay distribution 
+shown in Figure \ref{fig:multi-hop-all}., using the following code:
+\begin{code}
+lengthProbsNode10 :: [(Int, Rational)] -- represent the column of the table
+lengthProbsNode10 = [(1,0.40), (2,3.91), (3,31.06), (4,61.85), (5,2.78)]
+blendedDelayNode10 :: BlockSize -> DQ -- create a weighted sum of the hop distributions
+blendedDelayNode10 b = choices $ map (\(n,p) -> (p, hops n b)) lengthProbsNode10
+blendedHopCDFNode10 :: Layout Double Double
+blendedHopCDFNode10 = plotCDFs "" (zip (map show blockSizes) (map blendedDelayNode10 blockSizes))
+\end{code}
+\begin{table}[hbt]
+\begin{center}
+\begin{tabular}{crrrr}
+\toprule
+Length & \multicolumn{4}{c}{Node degree}   \\
+       & \multicolumn{1}{c}{5} & \multicolumn{1}{c}{10} & \multicolumn{1}{c}{15} & \multicolumn{1}{c}{20} \\ \midrule
+1      & 0.20                  & 0.40                   & 0.60                   & 0.80                   \\
+2      & 1.00                  & 3.91                   & 8.58                   & 14.72                  \\
+3      & 4.83                  & 31.06                  & 65.86                  & 80.08                  \\
+4      & 20.18                 & 61.85                  & 24.95                  & 4.40                   \\
+5      & 47.14                 & 2.78                   & 0.00                   &                        \\
+6      & 24.77                 & 0.00                   &                        &                        \\
+7      & 1.83                  &                        &                        &                        \\
+8      & 0.05                  &                        &                        &                        \\ 
+\bottomrule
+\end{tabular}
+\caption{Percentage of Paths Having a Given Length in a Random Graph of $2500$ Nodes of Varying Degree}\label{tab:path-lengths}
+\end{center}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/blended-hop-blocksizes}
+  \caption{Multi-Hop Delay Distributions per Block Size in a Graph of $2500$ Degree-$10$ Nodes}
+  \label{fig:multi-hop-all}
+\end{figure}
+It can be seen that for a block to have a high probability of arriving within the $2$s slot time, 
+the block size must be not much more than $64$kB.
+
+\subsection{Verification Before Forwarding}
+So far, we have only considered the time taken to transfer a block from one node to another.
+However, in the real system there are additional steps:
+\begin{enumerate}
+    \item The block forging node, having been selected, must construct the block;
+    \item Having constructed it, it must announce it to its neighbours;
+    \item The recipient node must determine that the block is novel and request it;
+    \item The block must be transferred;
+    \item The recipient node must verify (adopt) the block before it can be announced.
+\end{enumerate}
+Steps 3 - 5 are then repeated by each node in the path from the block producer to the next block producer.
+
+Many of these steps will depend on the size of the block and the complexity of the scripts it contains.
+For example, the time taken to verify a block will depend on the number and complexity of scripts in the block.
+We will consider the block contents divided into two types: \textit{value} and \textit{script}, with fixed sizes,
+ignoring mixed cases for simplicity:
+\begin{code}
+data BlockContents = Value | Script
+  deriving (Show, Eq)
+forgeBlock     :: BlockContents -> DQ
+announceBlock  :: BlockContents -> DQ
+requestBlock   :: BlockContents -> DQ
+adoptBlock     :: BlockContents -> DQ
+transferBlock  :: BlockContents -> DQ
+\end{code}
+\begin{table}[htb]
+\begin{center}
+\begin{tabular}{lrr}\toprule
+ & Value & Script \\[0pt]
+\midrule
+Started forge loop iteration, s & 0.00079  & 0.00071 \\[0pt]
+Acquired block context, s       & 0.02509  & 0.02339\\[0pt]
+Acquired ledger state, s        & 6e-05    & 6e-05\\[0pt]
+Acquired ledger view, s         & 2e-05    & 2e-05\\[0pt]
+Leadership check duration, s    & 0.00043  & 0.00039\\[0pt]
+Ledger ticking, s               & 0.02785  & 0.02608\\[0pt]
+Mempool snapshotting, s         & 0.0746   & 0.00225\\[0pt]
+Leadership to forged, s         & 0.00087  & 0.00016\\[0pt]
+Forged to announced, s          & 0.00073  & 0.00058\\[0pt]
+Forged to sending, s            & 0.00759  & 0.00536\\[0pt]
+Forged to self-adopted, s       & 0.08546  & 0.05759\\[0pt]
+Slot start to announced, s      & 0.13048  & 0.05368\\[0pt]
+\bottomrule
+\end{tabular}\caption{Timings for value- and script-heavy block forging in the 10.1.4 node release.}\label{tab:block-forging}
+\end{center}
+\end{table}
+
+\begin{table}[htb]
+\begin{center}
+\begin{tabular}{lrr}\toprule
+ & Value & Script \\[0pt]
+\midrule
+First peer notice, s        & 0.1326  & 0.05557\\[0pt]
+First peer fetch, s         & 0.14433 & 0.06125 \\[0pt]
+Notice to fetch request, s  & 0.00146 & 0.00119\\[0pt]
+Fetch duration, s           & 0.35826 & 0.12326 \\[0pt]
+Fetched to announced, s     & -0.0    & 3e-05\\[0pt]
+Fetched to sending, s       & 0.04552 & 0.04242 \\[0pt]
+Fetched to adopted, s       & 0.08461 & 0.05865\\[0pt]
+\bottomrule
+\end{tabular}\caption{Timings for value- and script-heavy block adoption in the 10.1.4 node release.}\label{tab:block-adoption}
+\end{center}
+\end{table}
+
+Using measurements taken from the benchmarking cluster\footnote{Thanks to Michael Karg for this data.} 
+for the 10.1.4 node release, as shown in tables
+\ref{tab:block-forging} and \ref{tab:block-adoption}, we can give values for these functions:
+\begin{code}
+forgeBlock Value      = wait 0.00087 -- Leadership to forged
+forgeBlock Script     = wait 0.00016
+announceBlock Value   = wait 0.00073 -- Forged to announced
+announceBlock Script  = wait 0.00058
+requestBlock Value    = wait 0.00146 -- Notice to fetch request
+requestBlock Script   = wait 0.00119
+adoptBlock Value      = wait 0.08461 -- Fetched to adopted
+adoptBlock Script     = wait 0.05865
+\end{code}
+We can then combine these with the transfer delays to give the total time for a block to be forged, 
+transferred and verified from one node to another:
+\begin{code}
+firstHop :: BlockContents -> DQ
+firstHop b = doSequentially [forgeBlock b, announceBlock b]
+verifiedHop :: BlockContents -> DQ
+verifiedHop b = 
+  doSequentially [requestBlock b, transferBlock b, adoptBlock b, announceBlock b]
+lastHop :: BlockContents -> DQ
+lastHop b = doSequentially [requestBlock b, transferBlock b, adoptBlock b]
+\end{code}
+The time to transfer a block depends on its size, determined by the contents of the block, 
+and the length distribution of a hop, which for the time being we will take to be the same as before:
+\begin{code}
+transferBlock b = choices [(1,short' b),(1,medium' b),(1,long' b)]
+  where -- estimated values
+    short' Value    = wait 0.3
+    short' Script   = wait 0.01
+    medium' Value   = wait 0.2
+    medium' Script  = wait 0.05  
+    long' Value     = wait 0.8
+    long' Script    = wait 0.1
+\end{code}
+The total time for a block to be forged by the selected node and diffused to the next selected node 
+in a network with 2500 nodes of degree 10 is then:
+\begin{code}
+totalTimeNode10 :: BlockContents -> DQ
+totalTimeNode10 b = doSequentially [firstHop b, blendedDelayNode10' b, lastHop b]
+  where
+    blendedDelayNode10' :: BlockContents -> DQ
+    blendedDelayNode10' b' = choices $ map (\(n,p) -> (p, hops' n b')) lengthProbsNode10
+    hops' :: Int -> BlockContents -> DQ
+    hops' n b'' = doSequentially (replicate (n - 1) (verifiedHop b''))
+blendedHopCDFNode10' :: Layout Double Double
+blendedHopCDFNode10' = 
+  plotCDFs "" (zip (map show blockContents) (map totalTimeNode10 blockContents))
+    where
+      blockContents = [Value, Script]
+\end{code}
+The CDF of the total time for a block of each type to be transferred and verified from one node to another in a 
+network with 2500 nodes of degree 10 is shown in Figure \ref{fig:multi-hop-verified}:
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/verified-hop-blocksizes}
+  \caption{Multi-Hop Delay Distributions per Block Type in a Graph of $2500$ Degree-$10$ Nodes}
+  \label{fig:multi-hop-verified}
+\end{figure}
+
+\subsection{Header Pipelining} \label{Sect:Direction.2}
+
+In Cardano Shelley, an individual block transmission involves a dialogue between a sender node, $A$, and a recipient node, $Z$.
+%
+We represent the overall transmission as $o_{A \rightsquigarrow Z}$. This can be refined into the following sequence:
+%to demonstrate the scenario when the design engineer is about to study that  aspect of their system:
+\begin{enumerate}
+  \item \textit{P}ermission for \textit{H}eader Transmission ($o_{Z \rightsquigarrow A}^{\mathit{ph}}$):
+    Node $Z$ grants the permission to node $A$ to send it a header.
+  \item \textit{T}ransmission of the \textit{H}eader ($o_{A \rightsquigarrow Z}^{\mathit{th}}$):
+    Node $A$ sends a header to node $Z$, which contains a summary of the block body: this is equivalent to the 'announce block' above.
+  \item \textit{P}ermission to for \textit{B}ody Transmission ($o_{Z \rightsquigarrow A}^{\mathit{pb}}$):
+    Node $Z$ analyses the header that was previously sent to it by $A$.
+    Once the desirability of the block is determined via the header, node $Z$ sends permission to $A$ to 
+    send it the respective body of the previously sent header: this is equivalent to the 'request block' above.
+  \item \textit{T}ransmission of the \textit{B}ody ($o_{A \rightsquigarrow Z}^{\mathit{tb}}$):
+    Finally, $A$ sends the block body to $Z$: this is equivalent to the 'transfer block' above.
+\end{enumerate}
+
+\noindent
+The motivation for the header/body split and the consequential dialogue is optimisation of transmission costs
+and prevention of denial-of-service attacks.
+Headers are designed to be affordably cheap to transmit, in particular they fit inside a single IP packet,
+and carry enough information about the block body to enable the recipient to verify its provenance and novelty.
+The body is only sent once the recipient has requested it. 
+Typically, the same header may be received from multiple sources, but the block body is requested from only one of them.
+This prevents the unnecessary transmission of block bodies when they are not required.
+Since bodies are typically much larger than headers, this save considerable network bandwidth
+and computation in block verification.
+
+The upstream node is not permitted to send another header until given permission to
+do so by the downstream node, in order to prevent a denial-of-service attack in which a
+node is bombarded with fake headers, each of which takes computation to verify or discard.
+In practice, the first header permission is sent when the connection between peers is established,
+and the permission renewed immediately after the header is received, 
+so that the upstream peer does not have to wait unnecessarily.
+
+So we can refine $o_{A \rightsquigarrow Z}$ into
+$o_{Z \rightsquigarrow A}^{\mathit{ph}} \SeqDelta o_{A \rightsquigarrow Z}^{\mathit{th}} \SeqDelta o_{Z \rightsquigarrow A}^{\mathit{pb}} \SeqDelta o_{A \rightsquigarrow Z}^{\mathit{tb}}$.
+
+However, a minor compromise with regard to DoS resistance can significantly reduce the latency of block propagation.
+This is called `Header Pipelining' (or `Diffusion Pipelining'), in which a new header is forwarded to the next node before 
+the body has been received, and the body is forwarded before it has been fully verified.
+To contain the risk of DoS attacks, the recipient node will not request another header from the sending node
+until the corresponding body has been received and verified, and every forwarding node must check:
+\begin{enumerate}
+  \item That the header is correct before forwarding: i.e. the block correctly references its predecessor, and has been generated according 
+  to the Praos leadership schedule (verifiable-random-function (VRF) and block-signature validation);
+  \item That the block is complete before forwarding, i.e. the received (but not yet validated) body is indeed referenced by the header's body hash.
+\end{enumerate}
+These ensure that an adversary can only inject malicious data to the extent that it controls stake.
+
+The sequence of steps then becomes (where node $A$ is the block producer, node $B$ is a directly connected node, 
+and node $Z$ is the next block producer):
+\begin{enumerate}
+    \item Node $A$, having been selected, constructs the block;
+    \item It announces the new block to its neighbours (nodes $B$) by sending the header;
+    \item Node $B$ validates the header and determines that it is novel (i.e. not already received from elsewhere);
+    \item Node $B$ then concurrently:
+    \begin{itemize}
+        \item Requests the block body;
+        \item Announces the header to its neighbours;
+    \end{itemize}
+    \item The block is transferred from $A$ to $B$;
+    \item Node $B$ must check the block is complete;
+    \item Node $B$ then concurrently:
+    \begin{itemize}
+        \item Verifies the block body and adopts it;
+        \item Transfers the block to any neighbours that have requested it;
+    \end{itemize}
+    \item Node $Z$ must verify the block before constructing the next block.
+\end{enumerate}
+The granting of permission to send the next header is not on the critical path for delivering the block from $A$ to $Z$, so 
+we will omit it here for simplicity.
+
+\bibliographystyle{plain}
+\bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
+\end{document}
