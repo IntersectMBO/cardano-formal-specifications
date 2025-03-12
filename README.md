@@ -28,10 +28,10 @@ covers new features for Cardano that are currently in the R&D phase.
 | [Performance model](#performance-model) |
 
 | New features |
-|--------------|  
-| Babel fees   |
-| Peras        |
-| Leios        |
+|--------------|
+| [Babel fees](#babel-fees) |
+| [Peras](#peras) |
+| [Leios](#leios) |
 
 # Cardano Specifications
 
