@@ -178,3 +178,5 @@ Ouroboros Peras is an extension of Ouroboros Praos adding a voting layer to achi
 The [formal specification](https://github.com/input-output-hk/peras-design/blob/main/src/Peras/SmallStep.lagda.md) of the Peras protocol was built with a focus on conformance testing: a testing model has been lifted into Agda and proofed sound with respect to the formal specification of Peras.
 
 ## Leios
+
+The [formal specification](https://github.com/input-output-hk/ouroboros-leios-formal-spec) for Leios implements different variants of the Leios Protocol. In addition to the relational specification there is also a deterministic specification, that can be run as model in conformance tests.
