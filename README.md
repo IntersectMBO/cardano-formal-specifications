@@ -174,4 +174,7 @@ timeliness of block diffusion can be investigated.
 
 ## Peras
 
+Ouroboros Peras is an extension of Ouroboros Praos adding a voting layer to achieve faster settlement. The details of the protocol are explained in the [CIP](https://github.com/cardano-foundation/CIPs/blob/master/CIP-0140/README.md).
+The [formal specification](https://github.com/input-output-hk/peras-design/blob/main/src/Peras/SmallStep.lagda.md) of the Peras protocol was built with a focus on conformance testing: a testing model has been lifted into Agda and proofed sound with respect to the formal specification of Peras.
+
 ## Leios
