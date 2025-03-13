@@ -1,7 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 import PraosModel
---import Data.Default.Class
 import Graphics.Rendering.Chart
 import Graphics.Rendering.Chart.Backend.Cairo
 
