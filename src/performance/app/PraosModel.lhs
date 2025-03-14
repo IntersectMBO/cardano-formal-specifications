@@ -78,7 +78,9 @@ module PraosModel
         multiHopCDF64k,
         multiHopCDF1024k,
         blendedHopCDFNode10,
-        blendedHopCDFNode10'
+        blendedHopCDFNode10',
+        pipelinedCDFNode10,
+        comparedCDFNode10
     )
 where
 import DeltaQ
@@ -482,8 +484,8 @@ and prevention of denial-of-service attacks.
 Headers are designed to be affordably cheap to transmit, in particular they fit inside a single IP packet,
 and carry enough information about the block body to enable the recipient to verify its provenance and novelty.
 The body is only sent once the recipient has requested it. 
-Typically, the same header may be received from multiple sources, but the block body is requested from only one of them.
-This prevents the unnecessary transmission of block bodies when they are not required.
+Typically, the same header may be received from multiple sources, but the block body is requested from only one of them,
+to avoid the unnecessary transmission of block bodies.
 Since bodies are typically much larger than headers, this save considerable network bandwidth
 and computation in block verification.
 
@@ -527,11 +529,92 @@ and node $Z$ is the next block producer):
         \item Verifies the block body and adopts it;
         \item Transfers the block to any neighbours that have requested it;
     \end{itemize}
-    \item Node $Z$ must verify the block before constructing the next block.
+    \item Node $Z$ must adopt the block before constructing the next block.
 \end{enumerate}
-The granting of permission to send the next header is not on the critical path for delivering the block from $A$ to $Z$, so 
-we will omit it here for simplicity.
+The granting of permission to send the \textit{next} header is not on the critical path for delivering the block 
+from $A$ to $Z$, so we will omit it for simplicity.
+Verifying the header and checking the block is complete are (currently) relatively trivial operations, 
+whose timing is not directly measured, so we assign them a nominal millisecond.
 
+The complication here is a \textit{last-to-finish} synchronisation between receiving and checking 
+the block body from the upstream node and receiving the request for it from the downstream node; 
+both are required before the block can be forwarded to the downstream node. 
+
+Consider first of all the trivial case where the forging node $A$ and the next block producer $Z$ are directly connected:
+\begin{code}
+validateHeader :: BlockContents -> DQ
+validateHeader Value      = wait 0.0001 -- Assumed de minimus time
+validateHeader Script     = wait 0.0001 -- Assumed de minimus time
+checkBlock :: BlockContents -> DQ
+checkBlock Value      = wait 0.0001 -- Assumed de minimus time
+checkBlock Script     = wait 0.0001 -- Assumed de minimus time
+oneHopTransfer :: BlockContents -> DQ
+oneHopTransfer b = doSequentially [forgeBlock b, announceBlock b,    -- done by node A
+                                   validateHeader b, requestBlock b,   -- done by node Z
+                                   transferBlock b,                  -- done by node A
+                                   checkBlock b, adoptBlock b]       -- done by node Z
+\end{code}
+Now consider the case with an intermediate node $B$: node $B$ must check the block and node $Z$ must request the block,
+having received and validated the header:
+\begin{code}
+twoHopTransfer :: BlockContents -> DQ
+twoHopTransfer b = doSequentially [forgeBlock b, announceBlock b,       -- done by node A
+                                   validateHeader b, announceBlock b, requestBlock b,     -- done by node B
+                                   transferBlock b,                     -- done by node A
+                                   checkBlock b  ./\.                   -- done by node B
+                                   (validateHeader b .>>. requestBlock b),      -- done by node Z
+                                   transferBlock b,                     -- done by node B
+                                   checkBlock b, adoptBlock b]          -- done by node Z
+\end{code}
+We can generalise this to $n$ hops using recursion for both the header propagation and the block body transfers:
+\begin{code}
+passHeader :: Int -> BlockContents -> DQ -- pass the header along a path of length n
+passHeader n b  
+  | n == 0    = forgeBlock b 
+  | otherwise = doSequentially [passHeader (n-1) b, announceBlock b, validateHeader b]
+
+getBlock :: Int -> BlockContents -> DQ  -- pass the block along a path of length n
+getBlock n b  
+  | n == 0    = adoptBlock b 
+  | otherwise = 
+    ((checkBlock b .>>. getBlock (n-1) b) ./\. (passHeader n b .>>. requestBlock b)) 
+      .>>. transferBlock b
+
+pipelinedTimeNode10 :: BlockContents -> DQ
+pipelinedTimeNode10 b = choices $ map (\(n,p) -> (p, getBlock n b)) lengthProbsNode10
+
+pipelinedCDFNode10 :: Layout Double Double
+pipelinedCDFNode10 = 
+  plotCDFs "" (zip (map show blockContents) (map pipelinedTimeNode10 blockContents))
+    where
+      blockContents = [Value, Script]
+\end{code}
+The CDF of the total time for a block of each type to be transferred and verified from one node to another in a 
+network with 2500 nodes of degree 10 using pipelining is shown in Figure \ref{fig:multi-hop-pipelined}:
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-blocksizes}
+  \caption{Pipelined Delay Distributions per Block Type in a Graph of $2500$ Degree-$10$ Nodes}
+  \label{fig:multi-hop-pipelined}
+\end{figure}
+This is compared with the non-pipelined case in Figure \ref{fig:multi-hop-compared}. 
+It can be seen that there is a reduction in the time taken for a block to be transferred and verified
+when pipelining is used, particularly for script-heavy blocks.
+\begin{code}
+comparedCDFNode10 :: Layout Double Double
+comparedCDFNode10 = 
+  plotCDFs "" (zip (map show blockContents) (map totalTimeNode10 blockContents) ++
+               zip pipelinedLabels (map pipelinedTimeNode10 blockContents))
+    where
+      pipelinedLabels = map ((++ " (pipelined)") . show) blockContents
+      blockContents = [Value, Script]
+\end{code}
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/compared-hop-blocktypes}
+  \caption{Pipelined and un-piplined Delay Distributions per Block Type Compared}
+  \label{fig:multi-hop-compared}
+\end{figure}
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
 \end{document}
