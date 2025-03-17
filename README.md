@@ -42,11 +42,11 @@ implementors, innovators, and technical community members.
 
 A second important use beyond a reference of how the system is now is
 to provide a baseline and communication medium for developing new
-feastures.
+features.
 
 The specifications are presented in formal notation using computer
 science concepts familiar to somebody who has completed the first
-year of a undergradate computer science course or who has equivalent
+year of a undergraduate computer science course or who has equivalent
 professional experience.
 
 The approach we have taken to write the specs has evolved over
@@ -55,9 +55,9 @@ generate PDFs and also executable specifications (reference
 implementations/test oracles usually in Haskell). While aiming to stay
 as close as possible to the style for the reader we now write our
 specifications in Agda and generate both the readable PDF and the
-executable specifations from the Agda source code. This gives us the
+executable specifications from the Agda source code. This gives us the
 benefit of type checking our definitions, using the executable
-specifations for conformance testing and also the ability to prove
+specifications for conformance testing and also the ability to prove
 properties about the design and have these formally verified.
 
 ## Plutus specifications
@@ -71,7 +71,7 @@ which evaluates them.
 
 2. Additionally, there is the
 "[paper](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)"
-specification document which definies the language elements, and has
+specification document which defines the language elements, and has
 denotational semantics for each of the supported builtin operations.
 
 Discussions are ongoing about how to merge or otherwise get the both
