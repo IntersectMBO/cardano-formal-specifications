@@ -12,7 +12,8 @@ main = do
     _ <- renderableToFile myOptions "app/Inserts/multi-hop-1024k-plots.pdf" (toRenderable multiHopCDF1024k)
     _ <- renderableToFile myOptions "app/Inserts/blended-hop-blocksizes.pdf" (toRenderable blendedHopCDFNode10)
     _ <- renderableToFile myOptions "app/Inserts/verified-hop-blocksizes.pdf" (toRenderable blendedHopCDFNode10')
-    _ <- renderableToFile myOptions "app/Inserts/pipelined-hop-blocksizes.pdf" (toRenderable pipelinedCDFNode10)
+    _ <- renderableToFile myOptions "app/Inserts/pipelined-hop-script.pdf" (toRenderable pipelindedMultiHopScript)
+    _ <- renderableToFile myOptions "app/Inserts/pipelined-hop-value.pdf" (toRenderable pipelindedMultiHopValue)
     _ <- renderableToFile myOptions "app/Inserts/compared-hop-blocktypes.pdf" (toRenderable comparedCDFNode10)
 
     putStrLn "All done"

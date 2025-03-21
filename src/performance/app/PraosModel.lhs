@@ -1,4 +1,5 @@
 \documentclass[oneside,11pt]{article}
+% NB This document contains Haskell code that generates the figures: see the README for instructions on how to run it.
 \usepackage[a4paper, portrait, margin=2.5cm]{geometry}
 %include polycode.fmt
 %\graphicspath{ {./Inserts/}}
@@ -79,7 +80,8 @@ module PraosModel
         multiHopCDF1024k,
         blendedHopCDFNode10,
         blendedHopCDFNode10',
-        pipelinedCDFNode10,
+        pipelindedMultiHopScript,
+        pipelindedMultiHopValue,
         comparedCDFNode10
     )
 where
@@ -570,15 +572,26 @@ We can generalise this to $n$ hops using recursion for both the header propagati
 \begin{code}
 passHeader :: Int -> BlockContents -> DQ -- pass the header along a path of length n
 passHeader n b  
-  | n == 0    = forgeBlock b 
-  | otherwise = doSequentially [passHeader (n-1) b, announceBlock b, validateHeader b]
+  | n == 0    = forgeBlock b -- we are recursing down to the block producer
+  | otherwise = doSequentially [passHeader (n-1) b, validateHeader b, announceBlock b]
 
 getBlock :: Int -> BlockContents -> DQ  -- pass the block along a path of length n
-getBlock n b  
-  | n == 0    = adoptBlock b 
-  | otherwise = 
-    ((checkBlock b .>>. getBlock (n-1) b) ./\. (passHeader n b .>>. requestBlock b)) 
-      .>>. transferBlock b
+-- we must first receive the header before we can request the block from nodes that 
+-- have already received the header and may have the block body
+getBlock n b = passHeader n b .>>. goGetBlock n b
+  where
+    goGetBlock :: Int -> BlockContents -> DQ
+    goGetBlock 0 b'  = adoptBlock b' -- we are recursing forward to the next block producer
+    goGetBlock n' b' = 
+      ((checkBlock b .>>. getBlock (n-1) b) ./\. requestBlock b) .>>. transferBlock b
+
+pipelindedMultiHopScript :: Layout Double Double
+pipelindedMultiHopScript = 
+  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Script) hopRange))
+
+pipelindedMultiHopValue :: Layout Double Double
+pipelindedMultiHopValue = 
+  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Value) hopRange))
 
 pipelinedTimeNode10 :: BlockContents -> DQ
 pipelinedTimeNode10 b = choices $ map (\(n,p) -> (p, getBlock n b)) lengthProbsNode10
@@ -589,15 +602,22 @@ pipelinedCDFNode10 =
     where
       blockContents = [Value, Script]
 \end{code}
-The CDF of the total time for a block of each type to be transferred and verified from one node to another in a 
-network with 2500 nodes of degree 10 using pipelining is shown in Figure \ref{fig:multi-hop-pipelined}:
+The CDF of the total time for a block of each type to be transferred and verified from one node to another  
+over a series of hops using pipelining is shown in Figure \ref{fig:multi-hop-pipelined-script} for script-heavy blocks 
+and Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks.
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-blocksizes}
-  \caption{Pipelined Delay Distributions per Block Type in a Graph of $2500$ Degree-$10$ Nodes}
-  \label{fig:multi-hop-pipelined}
+    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-script}
+  \caption{Pipelined Delay Distributions for Script Block Type per Hop}
+  \label{fig:multi-hop-pipelined-script}
 \end{figure}
-This is compared with the non-pipelined case in Figure \ref{fig:multi-hop-compared}. 
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-value}
+  \caption{Pipelined Delay Distributions for Value Block Type per Hop}
+  \label{fig:multi-hop-pipelined-value}
+\end{figure}
+The pipelined case is compared with the non-pipelined case in Figure \ref{fig:multi-hop-compared}. 
 It can be seen that there is a reduction in the time taken for a block to be transferred and verified
 when pipelining is used, particularly for script-heavy blocks.
 \begin{code}
