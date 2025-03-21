@@ -29,7 +29,7 @@ covers new features for Cardano that are currently in the R&D phase.
 
 | New features |
 |--------------|
-| [Babel fees](#babel-fees) |
+| [Nested Transactions](#nested-transactions) |
 | [Peras](#peras) |
 | [Leios](#leios) |
 
@@ -170,7 +170,25 @@ timeliness of block diffusion can be investigated.
 
 # New features
 
-## Babel fees
+## Nested Transactions
+
+"Nested Transactions" (see [CIP](https://github.com/cardano-foundation/CIPs/pull/862))
+constitutes a set of (primarily ledger) changes that revolve around supporting a
+specific kind of transaction batching. This type of transaction batching allows batches to be constructed using 
+one-way communication, meaning that users submitting transactions do not need to approve the completed batches
+into which their transactions get added by batchers. This is  
+referred to as *counterparty irrelevance*. There are no restrictions on who can run batching services.
+A nested transactions batch consists of a list of sub-transactions, and a single top-level transaction, 
+which fixes the contents of the batch.
+
+Batches supported as part of this feature may contain unbalanced transactions, however, the full 
+batch is required to balance.
+The primary purpose for introducing this feature is to enable processing transactions constructed 
+without any ada. The most common anticipated use case for this feature is atomic swaps, 
+in particular, of non-ada tokens for the ada required for the system fees and script collateral. 
+
+The [formal specification](https://github.com/IntersectMBO/formal-ledger-specifications/blob/polina-nested-txs/)
+is available.
 
 ## Peras
 
