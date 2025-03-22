@@ -92,6 +92,11 @@ import Graphics.Rendering.Chart (Layout)
 \tableofcontents
 \listoffigures
 \listoftables
+\paragraph{Note on the generation of this document}
+The Haskell code in this document generates the figures that are included in the text.
+The code is written in a literate style, with the code blocks interspersed with the text.
+A README file is included in the repository that explains how to run the code to generate the figures.
+Readers are invited to clone the repository and experiment with changing parameters to see how the figures change.
 \section{Introduction}
 Ouroboros Praos uses the distribution of `stake' in the system (i.e. the value of ADA 
 controlled by each node) to randomly determine which node (if any) is authorised to 
