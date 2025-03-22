@@ -537,12 +537,6 @@ The granting of permission to send the \textit{next} header is not on the critic
 from $A$ to $Z$, so we will omit it for simplicity.
 Verifying the header and checking the block is complete are (currently) relatively trivial operations, 
 whose timing is not directly measured, so we assign them a nominal millisecond.
-
-The complication here is a \textit{last-to-finish} synchronisation between receiving and checking 
-the block body from the upstream node and receiving the request for it from the downstream node; 
-both are required before the block can be forwarded to the downstream node. 
-
-Consider first of all the trivial case where the forging node $A$ and the next block producer $Z$ are directly connected:
 \begin{code}
 validateHeader :: BlockContents -> DQ
 validateHeader Value      = wait 0.0001 -- Assumed de minimus time
@@ -550,23 +544,30 @@ validateHeader Script     = wait 0.0001 -- Assumed de minimus time
 checkBlock :: BlockContents -> DQ
 checkBlock Value      = wait 0.0001 -- Assumed de minimus time
 checkBlock Script     = wait 0.0001 -- Assumed de minimus time
+\end{code}
+The complication here is a \textit{last-to-finish} synchronisation between receiving and checking 
+the block body from the upstream node and receiving the request for it from the downstream node; 
+both are required before the block can be forwarded to the downstream node. 
+
+Consider first of all the trivial case where the forging node $A$ and the next block producer $Z$ are directly connected:
+\begin{code}
 oneHopTransfer :: BlockContents -> DQ
-oneHopTransfer b = doSequentially [forgeBlock b, announceBlock b,    -- done by node A
-                                   validateHeader b, requestBlock b,   -- done by node Z
-                                   transferBlock b,                  -- done by node A
-                                   checkBlock b, adoptBlock b]       -- done by node Z
+oneHopTransfer b = doSequentially [forgeBlock b, announceBlock b,       -- done by node A
+                                   validateHeader b, requestBlock b,    -- done by node Z
+                                   transferBlock b,                     -- done by node A
+                                   checkBlock b, adoptBlock b]          -- done by node Z
 \end{code}
 Now consider the case with an intermediate node $B$: node $B$ must check the block and node $Z$ must request the block,
 having received and validated the header:
 \begin{code}
 twoHopTransfer :: BlockContents -> DQ
-twoHopTransfer b = doSequentially [forgeBlock b, announceBlock b,       -- done by node A
-                                   validateHeader b, announceBlock b, requestBlock b,     -- done by node B
-                                   transferBlock b,                     -- done by node A
-                                   checkBlock b  ./\.                   -- done by node B
-                                   (validateHeader b .>>. requestBlock b),      -- done by node Z
-                                   transferBlock b,                     -- done by node B
-                                   checkBlock b, adoptBlock b]          -- done by node Z
+twoHopTransfer b = doSequentially [forgeBlock b, announceBlock b,                             -- done by node A
+                                   validateHeader b, announceBlock b, requestBlock b,         -- done by node B
+                                   transferBlock b,                                           -- done by node A
+                                   checkBlock b  ./\.                                         -- done by node B
+                                   (validateHeader b .>>. requestBlock b),                    -- done by node Z
+                                   transferBlock b,                                           -- done by node B
+                                   checkBlock b, adoptBlock b]                                -- done by node Z
 \end{code}
 We can generalise this to $n$ hops using recursion for both the header propagation and the block body transfers:
 \begin{code}
@@ -584,7 +585,10 @@ getBlock n b = passHeader n b .>>. goGetBlock n b
     goGetBlock 0 b'  = adoptBlock b' -- we are recursing forward to the next block producer
     goGetBlock n' b' = 
       ((checkBlock b .>>. getBlock (n-1) b) ./\. requestBlock b) .>>. transferBlock b
-
+\end{code}
+With these functions we can generate the CDFs for the total time for a block of each type to be 
+transferred and verified from one node to another via a number of hops:
+\begin{code}
 pipelindedMultiHopScript :: Layout Double Double
 pipelindedMultiHopScript = 
   plotCDFs "" (zip (map show hopRange) (map (`getBlock` Script) hopRange))
@@ -592,7 +596,10 @@ pipelindedMultiHopScript =
 pipelindedMultiHopValue :: Layout Double Double
 pipelindedMultiHopValue = 
   plotCDFs "" (zip (map show hopRange) (map (`getBlock` Value) hopRange))
-
+\end{code}
+We can use a weighted choice of the number of hops, as before, 
+to model the effect of the path length distribution:
+\begin{code}
 pipelinedTimeNode10 :: BlockContents -> DQ
 pipelinedTimeNode10 b = choices $ map (\(n,p) -> (p, getBlock n b)) lengthProbsNode10
 
