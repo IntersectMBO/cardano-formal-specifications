@@ -412,18 +412,18 @@ Using measurements taken from the benchmarking cluster\footnote{Thanks to Michae
 for the 10.1.4 node release, as shown in tables
 \ref{tab:block-forging} and \ref{tab:block-adoption}, we can give values for these functions:
 \begin{code}
-forgeBlock Value      = wait 0.00087 -- Leadership to forged
-forgeBlock Script     = wait 0.00016
-forgeBlock Bounding   = forgeBlock Script ./\. forgeBlock Value
-announceBlock Value   = wait 0.00073 -- Forged to announced
-announceBlock Script  = wait 0.00058
+forgeBlock Value       = wait 0.00087 -- Leadership to forged
+forgeBlock Script      = wait 0.00016
+forgeBlock Bounding    = forgeBlock Script ./\. forgeBlock Value
+announceBlock Value    = wait 0.00073 -- Forged to announced
+announceBlock Script   = wait 0.00058
 announceBlock Bounding = announceBlock Script ./\. announceBlock Value
-requestBlock Value    = wait 0.00146 -- Notice to fetch request
-requestBlock Script   = wait 0.00119
-requestBlock Bounding = requestBlock Script ./\. requestBlock Value
-adoptBlock Value      = wait 0.08461 -- Fetched to adopted
-adoptBlock Script     = wait 0.05865
-adoptBlock Bounding   = adoptBlock Script ./\. adoptBlock Value
+requestBlock Value     = wait 0.00146 -- Notice to fetch request
+requestBlock Script    = wait 0.00119
+requestBlock Bounding  = requestBlock Script ./\. requestBlock Value
+adoptBlock Value       = wait 0.08461 -- Fetched to adopted
+adoptBlock Script      = wait 0.05865
+adoptBlock Bounding    = adoptBlock Script ./\. adoptBlock Value
 \end{code}
 We can then combine these with the transfer delays to give the total time for a block to be forged, 
 transferred and verified from one node to another:
@@ -441,15 +441,15 @@ and the length distribution of a hop, which for the time being we will take to b
 \begin{code}
 transferBlock b = choices [(1,short' b),(1,medium' b),(1,long' b)]
   where -- estimated values
-    short' Value    = wait 0.3
-    short' Script   = wait 0.01
-    short' Bounding = short' Script ./\. short' Value
-    medium' Value   = wait 0.2
-    medium' Script  = wait 0.05  
+    short' Value     = wait 0.3
+    short' Script    = wait 0.01
+    short' Bounding  = short' Script ./\. short' Value
+    medium' Value    = wait 0.2
+    medium' Script   = wait 0.05  
     medium' Bounding = medium' Script ./\. medium' Value
-    long' Value     = wait 0.8
-    long' Script    = wait 0.1
-    long' Bounding  = long' Script ./\. long' Value
+    long' Value      = wait 0.8
+    long' Script     = wait 0.1
+    long' Bounding   = long' Script ./\. long' Value
 \end{code}
 The total time for a block to be forged by the selected node and diffused to the next selected node 
 in a network with 2500 nodes of degree 10 is then:
@@ -516,7 +516,7 @@ so that the upstream peer does not have to wait unnecessarily.
 So we can refine $o_{A \rightsquigarrow Z}$ into
 $o_{Z \rightsquigarrow A}^{\mathit{ph}} \SeqDelta o_{A \rightsquigarrow Z}^{\mathit{th}} \SeqDelta o_{Z \rightsquigarrow A}^{\mathit{pb}} \SeqDelta o_{A \rightsquigarrow Z}^{\mathit{tb}}$.
 
-However, a minor compromise with regard to DoS resistance can significantly reduce the latency of block propagation.
+However, a minor compromise with regard to DoS resistance can reduce the latency of block propagation.
 This is called `Header Pipelining' (or `Diffusion Pipelining'), in which a new header is forwarded to the next node before 
 the body has been received, and the body is forwarded before it has been fully verified.
 To contain the risk of DoS attacks, the recipient node will not request another header from the sending node
