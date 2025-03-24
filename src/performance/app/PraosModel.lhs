@@ -82,6 +82,7 @@ module PraosModel
         blendedHopCDFNode10',
         pipelindedMultiHopScript,
         pipelindedMultiHopValue,
+        pipelindedMultiHopBounding,
         comparedCDFNode10
     )
 where
@@ -97,7 +98,7 @@ The Haskell code in this document generates the figures that are included in the
 The code is written in a literate style, with the code blocks interspersed with the text.
 A README file is included in the repository that explains how to run the code to generate the figures.
 Readers are invited to clone the repository and experiment with changing parameters to see how the figures change.
-\section{Introduction}
+\section{Introduction}\footnote{The early sections of this document are largely reproduced from \cite{computers11030045}.}
 Ouroboros Praos uses the distribution of `stake' in the system (i.e. the value of ADA 
 controlled by each node) to randomly determine which node (if any) is authorised to 
 produce a new block in the chain during a specific time interval (a `slot');
@@ -310,7 +311,8 @@ lengthProbsNode10 = [(1,0.40), (2,3.91), (3,31.06), (4,61.85), (5,2.78)]
 blendedDelayNode10 :: BlockSize -> DQ -- create a weighted sum of the hop distributions
 blendedDelayNode10 b = choices $ map (\(n,p) -> (p, hops n b)) lengthProbsNode10
 blendedHopCDFNode10 :: Layout Double Double
-blendedHopCDFNode10 = plotCDFs "" (zip (map show blockSizes) (map blendedDelayNode10 blockSizes))
+blendedHopCDFNode10 = 
+  plotCDFs "" (zip (map show blockSizes) (map blendedDelayNode10 blockSizes))
 \end{code}
 \begin{table}[hbt]
 \begin{center}
@@ -356,9 +358,10 @@ Steps 3 - 5 are then repeated by each node in the path from the block producer t
 Many of these steps will depend on the size of the block and the complexity of the scripts it contains.
 For example, the time taken to verify a block will depend on the number and complexity of scripts in the block.
 We will consider the block contents divided into two types: \textit{value} and \textit{script}, with fixed sizes,
-ignoring mixed cases for simplicity:
+we do not explicitly consider mixed cases for simplicity, but posit a synthetic bounding case that is
+the worst of the two in all dimensions:
 \begin{code}
-data BlockContents = Value | Script
+data BlockContents = Value | Script | Bounding
   deriving (Show, Eq)
 forgeBlock     :: BlockContents -> DQ
 announceBlock  :: BlockContents -> DQ
@@ -411,12 +414,16 @@ for the 10.1.4 node release, as shown in tables
 \begin{code}
 forgeBlock Value      = wait 0.00087 -- Leadership to forged
 forgeBlock Script     = wait 0.00016
+forgeBlock Bounding   = forgeBlock Script ./\. forgeBlock Value
 announceBlock Value   = wait 0.00073 -- Forged to announced
 announceBlock Script  = wait 0.00058
+announceBlock Bounding = announceBlock Script ./\. announceBlock Value
 requestBlock Value    = wait 0.00146 -- Notice to fetch request
 requestBlock Script   = wait 0.00119
+requestBlock Bounding = requestBlock Script ./\. requestBlock Value
 adoptBlock Value      = wait 0.08461 -- Fetched to adopted
 adoptBlock Script     = wait 0.05865
+adoptBlock Bounding   = adoptBlock Script ./\. adoptBlock Value
 \end{code}
 We can then combine these with the transfer delays to give the total time for a block to be forged, 
 transferred and verified from one node to another:
@@ -436,10 +443,13 @@ transferBlock b = choices [(1,short' b),(1,medium' b),(1,long' b)]
   where -- estimated values
     short' Value    = wait 0.3
     short' Script   = wait 0.01
+    short' Bounding = short' Script ./\. short' Value
     medium' Value   = wait 0.2
     medium' Script  = wait 0.05  
+    medium' Bounding = medium' Script ./\. medium' Value
     long' Value     = wait 0.8
     long' Script    = wait 0.1
+    long' Bounding  = long' Script ./\. long' Value
 \end{code}
 The total time for a block to be forged by the selected node and diffused to the next selected node 
 in a network with 2500 nodes of degree 10 is then:
@@ -455,7 +465,7 @@ blendedHopCDFNode10' :: Layout Double Double
 blendedHopCDFNode10' = 
   plotCDFs "" (zip (map show blockContents) (map totalTimeNode10 blockContents))
     where
-      blockContents = [Value, Script]
+      blockContents = [Value, Script, Bounding]
 \end{code}
 The CDF of the total time for a block of each type to be transferred and verified from one node to another in a 
 network with 2500 nodes of degree 10 is shown in Figure \ref{fig:multi-hop-verified}:
@@ -546,9 +556,11 @@ whose timing is not directly measured, so we assign them a nominal millisecond.
 validateHeader :: BlockContents -> DQ
 validateHeader Value      = wait 0.0001 -- Assumed de minimus time
 validateHeader Script     = wait 0.0001 -- Assumed de minimus time
+validateHeader Bounding   = validateHeader Script ./\. validateHeader Value
 checkBlock :: BlockContents -> DQ
 checkBlock Value      = wait 0.0001 -- Assumed de minimus time
 checkBlock Script     = wait 0.0001 -- Assumed de minimus time
+checkBlock Bounding   = checkBlock Script ./\. checkBlock Value
 \end{code}
 The complication here is a \textit{last-to-finish} synchronisation between receiving and checking 
 the block body from the upstream node and receiving the request for it from the downstream node; 
@@ -601,6 +613,10 @@ pipelindedMultiHopScript =
 pipelindedMultiHopValue :: Layout Double Double
 pipelindedMultiHopValue = 
   plotCDFs "" (zip (map show hopRange) (map (`getBlock` Value) hopRange))
+
+pipelindedMultiHopBounding :: Layout Double Double
+pipelindedMultiHopBounding = 
+  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Bounding) hopRange))
 \end{code}
 We can use a weighted choice of the number of hops, as before, 
 to model the effect of the path length distribution:
@@ -615,8 +631,9 @@ pipelinedCDFNode10 =
       blockContents = [Value, Script]
 \end{code}
 The CDF of the total time for a block of each type to be transferred and verified from one node to another  
-over a series of hops using pipelining is shown in Figure \ref{fig:multi-hop-pipelined-script} for script-heavy blocks 
-and Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks.
+over a series of hops using pipelining is shown in Figure \ref{fig:multi-hop-pipelined-script} for script-heavy blocks,
+Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks, and Figure \ref{fig:multi-hop-pipelined-bounding}
+for the synthetic bounding case.
 \begin{figure}[htbp]
   \centering
     \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-script}
@@ -629,6 +646,12 @@ and Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks.
   \caption{Pipelined Delay Distributions for Value Block Type per Hop}
   \label{fig:multi-hop-pipelined-value}
 \end{figure}
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-bounding}
+  \caption{Pipelined Delay Distributions for Bounding Block Type per Hop}
+  \label{fig:multi-hop-pipelined-bounding}
+\end{figure}
 The pipelined case is compared with the non-pipelined case in Figure \ref{fig:multi-hop-compared}. 
 It can be seen that there is a reduction in the time taken for a block to be transferred and verified
 when pipelining is used, particularly for script-heavy blocks.
@@ -639,7 +662,7 @@ comparedCDFNode10 =
                zip pipelinedLabels (map pipelinedTimeNode10 blockContents))
     where
       pipelinedLabels = map ((++ " (pipelined)") . show) blockContents
-      blockContents = [Value, Script]
+      blockContents = [Value, Script, Bounding]
 \end{code}
 \begin{figure}[htbp]
   \centering
@@ -647,6 +670,7 @@ comparedCDFNode10 =
   \caption{Pipelined and un-piplined Delay Distributions per Block Type Compared}
   \label{fig:multi-hop-compared}
 \end{figure}
+It can be seen that the bounding case is identical to the value-heavy case.
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
 \end{document}
