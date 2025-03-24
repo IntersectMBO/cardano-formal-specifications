@@ -2,7 +2,6 @@
 % NB This document contains Haskell code that generates the figures: see the README for instructions on how to run it.
 \usepackage[a4paper, portrait, margin=2.5cm]{geometry}
 %include polycode.fmt
-\graphicspath{ {./Inserts/}}
 \usepackage{array,multirow,subfig,hyperref,booktabs}
 \usepackage[english]{babel}
 \usepackage[utf8x]{inputenc}
@@ -10,6 +9,7 @@
 \usepackage[en-GB]{datetime2}
 \usepackage{amsmath,amssymb,dsfont,wasysym,stmaryrd,mathrsfs,turnstile,cancel,graphicx,mathtools,listings,caption,xcolor,calligra,chemarrow}
 % Local definitions
+\graphicspath{ {./Inserts/}}
 \usepackage[most]{tcolorbox}
 \makeatletter
 \newcommand{\labitem}[2]{%
