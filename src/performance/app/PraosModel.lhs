@@ -2,7 +2,7 @@
 % NB This document contains Haskell code that generates the figures: see the README for instructions on how to run it.
 \usepackage[a4paper, portrait, margin=2.5cm]{geometry}
 %include polycode.fmt
-%\graphicspath{ {./Inserts/}}
+\graphicspath{ {./Inserts/}}
 \usepackage{array,multirow,subfig,hyperref,booktabs}
 \usepackage[english]{babel}
 \usepackage[utf8x]{inputenc}
@@ -253,7 +253,7 @@ oneHopCDF = plotCDFs "" (zip (map show blockSizes) (map hop blockSizes))
 \end{code}
 \begin{figure}[htb]
   \centering
-        \includegraphics[width=0.7\textwidth]{Inserts/oneHopDelays.pdf}
+        \includegraphics[width=0.7\textwidth]{oneHopDelays.pdf}
   \caption{One-Hop Delay Distributions per Block Size}
   \label{fig:one-hop-delays}
 \end{figure}
@@ -287,14 +287,14 @@ wheras for a $1024$kB block size the $95^\mathit{th}$ percentile of transfer tim
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/multi-hop64k-plots}
+    \includegraphics[width=0.7\textwidth]{multi-hop64k-plots}
   \caption{Multi-Hop Delay Distributions for $64$k Block Size}
   \label{fig:multi-hop-64k}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/multi-hop-1024k-plots}
+    \includegraphics[width=0.7\textwidth]{multi-hop-1024k-plots}
   \caption{Multi-Hop Delay Distributions for $1024$k Block Size}
   \label{fig:multi-hop-1024k}
 \end{figure}
@@ -336,7 +336,7 @@ Length & \multicolumn{4}{c}{Node degree}   \\
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/blended-hop-blocksizes}
+    \includegraphics[width=0.7\textwidth]{blended-hop-blocksizes}
   \caption{Multi-Hop Delay Distributions per Block Size in a Graph of $2500$ Degree-$10$ Nodes}
   \label{fig:multi-hop-all}
 \end{figure}
@@ -471,7 +471,7 @@ The CDF of the total time for a block of each type to be transferred and verifie
 network with 2500 nodes of degree 10 is shown in Figure \ref{fig:multi-hop-verified}:
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/verified-hop-blocksizes}
+    \includegraphics[width=0.7\textwidth]{verified-hop-blocksizes}
   \caption{Multi-Hop Delay Distributions per Block Type in a Graph of $2500$ Degree-$10$ Nodes}
   \label{fig:multi-hop-verified}
 \end{figure}
@@ -636,19 +636,19 @@ Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks, and Figure \r
 for the synthetic bounding case.
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-script}
+    \includegraphics[width=0.7\textwidth]{pipelined-hop-script}
   \caption{Pipelined Delay Distributions for Script Block Type per Hop}
   \label{fig:multi-hop-pipelined-script}
 \end{figure}
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-value}
+    \includegraphics[width=0.7\textwidth]{pipelined-hop-value}
   \caption{Pipelined Delay Distributions for Value Block Type per Hop}
   \label{fig:multi-hop-pipelined-value}
 \end{figure}
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-bounding}
+    \includegraphics[width=0.7\textwidth]{pipelined-hop-bounding}
   \caption{Pipelined Delay Distributions for Bounding Block Type per Hop}
   \label{fig:multi-hop-pipelined-bounding}
 \end{figure}
@@ -666,7 +666,7 @@ comparedCDFNode10 =
 \end{code}
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/compared-hop-blocktypes}
+    \includegraphics[width=0.7\textwidth]{compared-hop-blocktypes}
   \caption{Pipelined and un-piplined Delay Distributions per Block Type Compared}
   \label{fig:multi-hop-compared}
 \end{figure}
