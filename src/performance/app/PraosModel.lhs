@@ -423,7 +423,7 @@ requestBlock Script    = wait 0.00119
 requestBlock Bounding  = requestBlock Script ./\. requestBlock Value
 adoptBlock Value       = wait 0.08461 -- Fetched to adopted
 adoptBlock Script      = wait 0.05865
-adoptBlock Bounding    = adoptBlock Script ./\. adoptBlock Value
+adoptBlock Bounding    = adoptBlock Script .>>. adoptBlock Value -- need to validate both
 \end{code}
 We can then combine these with the transfer delays to give the total time for a block to be forged, 
 transferred and verified from one node to another:
