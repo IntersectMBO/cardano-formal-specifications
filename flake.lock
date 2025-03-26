@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "deltaq": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1742471297,
+        "narHash": "sha256-69NvfLJTcD/u899NTXhTqVfOry65AEvmqTn1QJ15QSc=",
+        "owner": "DeltaQ-SD",
+        "repo": "deltaq",
+        "rev": "2e12a0e3d8c98869eb0801c266b1672471ae5834",
+        "type": "github"
+      },
+      "original": {
+        "owner": "DeltaQ-SD",
+        "repo": "deltaq",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -36,6 +52,7 @@
     },
     "root": {
       "inputs": {
+        "deltaq": "deltaq",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }
