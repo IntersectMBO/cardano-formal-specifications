@@ -88,6 +88,7 @@ module PraosModel
 where
 import DeltaQ
 import Graphics.Rendering.Chart (Layout)
+import Text.XHtml (caption, sub)
 \end{code}
 %endif
 \tableofcontents
@@ -670,7 +671,84 @@ comparedCDFNode10 =
   \caption{Pipelined and un-piplined Delay Distributions per Block Type Compared}
   \label{fig:multi-hop-compared}
 \end{figure}
-It can be seen that the bounding case is identical to the value-heavy case.
+\appendix
+\section{Praos Leader Selection}
+Ouroboros Praos has significant operational differences from Ouroboros Classic. 
+Instead of a slot leader schedule being pre-computed at the start of an epoch, 
+each stakeholder separately computes its own schedule, based on its own private key. 
+This creates the potential for both leadership clashes (where two or more stakeholders 
+are scheduled to produce a block in the same slot) and empty slots (where no stakeholder 
+is scheduled to produce a block). In order to compensate for the empty slots, 
+the slot time is reduced compared to Ouroboros Classic, so that the overall rate 
+of production of blocks is broadly similar. The protocol is provably robust against 
+message delays up to a parameter $\Delta$ (measured in slot-times), and its security 
+degrades gracefully as the delays increase.
+
+This has implications for the performance of the overall Cardano system:
+The non-uniform rate of production of blocks introduces a variable load on the block diffusion function;
+The shorter slot time increases the probability that a block will not be fully diffused before the end 
+of the slot (depending on the size of the block) hence may not be available to a leader in the immediately 
+following slot, causing a fork.
+Conversely, long sequences of empty slots allow all previous blocks to be diffused to every node, 
+ensuring a consistent view of the chain to be established.
+
+This introduces a set of trade-offs, determined by Praos parameters:
+\begin{itemize}
+\item Slot time;    
+\item Slot frequency;
+\item Number of active nodes;
+\item Block size;
+\item Slot occupancy probability;
+\item Maximum diffusion delay $\Delta$.
+\end{itemize}
+
+Which collectively affect the outcomes of the algorithm:
+\begin{itemize}
+\item Effective transaction rate;
+\item Wait time for inclusion in the chain;
+\item Probability of being included in a `losing' fork (requiring transaction resubmission);
+\item Rate of growth of longest chain.
+\end{itemize}
+The parameters are summarised in Table \ref{tab:parameters}.
+\begin{table}
+\centering
+\begin{tabular}{>{\hspace{0pt}}m{0.112\linewidth}>{\hspace{0pt}}m{0.565\linewidth}>{\hspace{0pt}}m{0.206\linewidth}>{\hspace{0pt}}m{0.025\linewidth}>{\hspace{0pt}}m{0.025\linewidth}} 
+\toprule
+\textbf{Parameter}                            & \textbf{Description}                                          & \textbf{Notes}                       &                                             &                                              \\
+\multirow{2}{0.112\linewidth}{\hspace{0pt}Ts} & Number of active nodes                                        & Expected to be \textasciitilde{}2000 & \multirow{3}{0.025\linewidth}{\hspace{0pt}} & \multirow{5}{0.025\linewidth}{\hspace{0pt}}  \\
+                                              & Duration of a slot                                            & Expected to be \textasciitilde{} 1s  &                                             &                                              \\
+f                                             & Active slot fraction                                          & $0 < f \leq 1$ (set at 1/20)         &                                             &                                              \\
+$\Delta$                                      & Maximum number of slots before a diffused message is received & $\Delta \geq 1$                      & \multirow{2}{0.025\linewidth}{\hspace{0pt}} &                                              \\
+\bottomrule
+\end{tabular}\caption{Parameters for the Praos protocol.}
+\label{tab:parameters}
+\end{table}
+\subsection{Distribution of leadership}
+From \cite{10.1007/978-3-319-78375-8_3}, the probability of stakeholder $U_i$ with relative stake $\alpha_i$ 
+being leader in any slot is:
+\begin{equation}
+p_i = \Phi_f(\alpha_i) = 1 - (1-f)^{\alpha_i}
+\end{equation}
+If each of the $N$ active nodes has an equal amount of stake, $\alpha_i=\frac{1}{N}$, 
+and hence equal probability of being a leader in any particular slot, then we would have:
+\begin{equation}
+\forall_i\ {p_i} =  1 - (1-f)^{\frac{1}{N}}
+\end{equation}
+In general, the probability that stakeholder $U_i$ is \textit{not} the leader is $1-p_i = (1-f)^{\alpha_i}$, 
+and so the probability that \textit{no} stakeholder is the leader (i.e. we have an empty slot) is
+given by multiplying the probabilities (since each node decides independently whether it is the leader):
+\begin{equation}
+P_\text{no leader} = \prod_{i=1}^{N}(1-f)^{\alpha_i} = (1-f)^{\sum_{i=0}^N\alpha_i} = 1 - f
+\end{equation}
+
+(Hence the definition of $f$ as the active slot fraction). 
+Note that this is independent of the actual distribution of stake.
+
+Consequently, the probability of a run of $m$ successive empty slots (since these are independent trials) is:
+\begin{equation}
+P^{NL}_m =P_\text{m empty slots} = (1-f)^m
+\end{equation}
+
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
 \end{document}
