@@ -88,7 +88,6 @@ module PraosModel
 where
 import DeltaQ
 import Graphics.Rendering.Chart (Layout)
-import Text.XHtml (caption, sub)
 \end{code}
 %endif
 \tableofcontents
@@ -97,13 +96,15 @@ import Text.XHtml (caption, sub)
 \paragraph{Note on the generation of this document}
 The Haskell code in this document generates the figures that are included in the text.
 The code is written in a literate style, with the code blocks interspersed with the text.
-A README file is included in the repository that explains how to run the code to generate the figures.
+A README file is included in the repository that explains how to run the code to generate the figures,
+and how to produce the final pdf.
 Readers are invited to clone the repository and experiment with changing parameters to see how the figures change.
 \section{Introduction}\footnote{The early sections of this document are largely reproduced from \cite{computers11030045}.}
 Ouroboros Praos uses the distribution of `stake' in the system (i.e. the value of ADA 
 controlled by each node) to randomly determine which node (if any) is authorised to 
 produce a new block in the chain during a specific time interval (a `slot');
-the more stake a node controls, the more likely it is to be authorised to produce a block.
+the more stake a node controls, the more likely it is to be authorised to produce a block
+(see Appending \ref{sec:praos_leadership}).
 It is important that the selected block-producing node has a copy of the 
 most recently produced block, so that the new block can correctly extend the previous chain,
 otherwise there is a fork in the chain, meaning that at least one of the blocks will be discarded, wasting work.
@@ -126,9 +127,19 @@ next block. Since the granting of permission to generate a block is random, the 
 block generations is exponentially distributed.
 In Cardano, slots are one second long and blocks are produced every $20$ seconds on average.
 
+Given that the newly generated block takes some time to propagate through the network to the next 
+block-producing node, a fork will be avoided if and only if there is no leader elected in the intervening period.
+The probability of this is computed in Appendix \ref{sec:praos-leadership}.
+If the probability that the diffusion takes at most $m$ slots is $P^D_m$, and the probability of $m$
+successive slots with no leader is $P^{NL}_m$, then the probability of avoiding a fork $P^{NF}$ is:
+\begin{equation}
+P^{NF} = \sum_{m=0}^{\infty} P^D_m \times P^{NL}_m
+\end{equation}
+The main focus of this document is on the computation of $P^D_m$.
+
 \vspace{24pt}
 
-\begin{statementbox}[colback=white]{Problem Statement}
+\begin{statementbox}[colback=white]{Diffusion problem Statement}
 Starting from blockchain node $A$, what is the probability distribution of the time
 taken for a block to reach a different node $Z$, when $A$ and $Z$ are picked at random from the graph?
 \end{statementbox}
@@ -672,7 +683,7 @@ comparedCDFNode10 =
   \label{fig:multi-hop-compared}
 \end{figure}
 \appendix
-\section{Praos Leader Selection}
+\section{Praos Leader Selection}\label{sec:praos_leadership}
 Ouroboros Praos has significant operational differences from Ouroboros Classic. 
 Instead of a slot leader schedule being pre-computed at the start of an epoch, 
 each stakeholder separately computes its own schedule, based on its own private key. 
