@@ -635,12 +635,6 @@ to model the effect of the path length distribution:
 \begin{code}
 pipelinedTimeNode10 :: BlockContents -> DQ
 pipelinedTimeNode10 b = choices $ map (\(n,p) -> (p, getBlock n b)) lengthProbsNode10
-
-pipelinedCDFNode10 :: Layout Double Double
-pipelinedCDFNode10 = 
-  plotCDFs "" (zip (map show blockContents) (map pipelinedTimeNode10 blockContents))
-    where
-      blockContents = [Value, Script]
 \end{code}
 The CDF of the total time for a block of each type to be transferred and verified from one node to another  
 over a series of hops using pipelining is shown in Figure \ref{fig:multi-hop-pipelined-script} for script-heavy blocks,
