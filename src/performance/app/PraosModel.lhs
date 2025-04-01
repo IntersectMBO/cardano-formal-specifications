@@ -129,7 +129,7 @@ In Cardano, slots are one second long and blocks are produced every $20$ seconds
 
 Given that the newly generated block takes some time to propagate through the network to the next 
 block-producing node, a fork will be avoided if and only if there is no leader elected in the intervening period.
-The probability of this is computed in Appendix \ref{sec:praos-leadership}.
+The probability of this is computed in Appendix \ref{sec:praos_leadership}.
 If the probability that the diffusion takes at most $m$ slots is $P^D_m$, and the probability of $m$
 successive slots with no leader is $P^{NL}_m$, then the probability of avoiding a fork $P^{NF}$ is:
 \begin{equation}
@@ -676,6 +676,7 @@ comparedCDFNode10 =
   \caption{Pipelined and un-piplined Delay Distributions per Block Type Compared}
   \label{fig:multi-hop-compared}
 \end{figure}
+\newpage
 \appendix
 \section{Praos Leader Selection}\label{sec:praos_leadership}
 Ouroboros Praos has significant operational differences from Ouroboros Classic. 
@@ -715,14 +716,14 @@ Which collectively affect the outcomes of the algorithm:
 \item Rate of growth of longest chain.
 \end{itemize}
 The parameters are summarised in Table \ref{tab:parameters}.
-\begin{table}
+\begin{table}[htb]
 \centering
-\begin{tabular}{>{\hspace{0pt}}m{0.112\linewidth}>{\hspace{0pt}}m{0.565\linewidth}>{\hspace{0pt}}m{0.206\linewidth}>{\hspace{0pt}}m{0.025\linewidth}>{\hspace{0pt}}m{0.025\linewidth}} 
+\begin{tabular}{>{\hspace{0pt}}m{0.16\linewidth}>{\hspace{0pt}}m{0.477\linewidth}>{\hspace{0pt}}m{0.246\linewidth}>{\hspace{0pt}}m{0.025\linewidth}>{\hspace{0pt}}m{0.025\linewidth}} 
 \toprule
 \textbf{Parameter}                            & \textbf{Description}                                          & \textbf{Notes}                       &                                             &                                              \\
-\multirow{2}{0.112\linewidth}{\hspace{0pt}Ts} & Number of active nodes                                        & Expected to be \textasciitilde{}2000 & \multirow{3}{0.025\linewidth}{\hspace{0pt}} & \multirow{5}{0.025\linewidth}{\hspace{0pt}}  \\
-                                              & Duration of a slot                                            & Expected to be \textasciitilde{} 1s  &                                             &                                              \\
-f                                             & Active slot fraction                                          & $0 < f \leq 1$ (set at 1/20)         &                                             &                                              \\
+$N$                                           & Number of active nodes                                        & Expected to be \textasciitilde{}2000 & \multirow{3}{0.025\linewidth}{\hspace{0pt}} & \multirow{5}{0.025\linewidth}{\hspace{0pt}}  \\
+$T_s$                                         & Duration of a slot                                            & Expected to be \textasciitilde{}1s  &                                             &                                              \\
+$f$                                           & Active slot fraction                                          & $0 < f \leq 1$ (set at 1/20)         &                                             &                                              \\
 $\Delta$                                      & Maximum number of slots before a diffused message is received & $\Delta \geq 1$                      & \multirow{2}{0.025\linewidth}{\hspace{0pt}} &                                              \\
 \bottomrule
 \end{tabular}\caption{Parameters for the Praos protocol.}
