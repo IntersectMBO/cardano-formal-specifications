@@ -131,7 +131,7 @@ Given that the newly generated block takes some time to propagate through the ne
 block-producing node, a fork will be avoided if and only if there is no leader elected in the intervening period.
 The probability of this is computed in Appendix \ref{sec:praos_leadership}.
 If the probability that the diffusion takes at most $m$ slots is $P^D_m$, and the probability of $m$
-successive slots with no leader is $P^{NL}_m$, then the probability of avoiding a fork $P^{NF}$ is:
+successive slots with no leader is $P^{NL}_m$, then the probability $P^{NF}$ of avoiding a fork is:
 \begin{equation}
 P^{NF} = \sum_{m=0}^{\infty} P^D_m \times P^{NL}_m
 \end{equation}
@@ -679,23 +679,26 @@ comparedCDFNode10 =
 \newpage
 \appendix
 \section{Praos Leader Selection}\label{sec:praos_leadership}
-Ouroboros Praos has significant operational differences from Ouroboros Classic. 
-Instead of a slot leader schedule being pre-computed at the start of an epoch, 
+Ouroboros Praos has significant operational differences from typical consensus algorithms. 
+Instead of a slot leader schedule being pre-computed, 
 each stakeholder separately computes its own schedule, based on its own private key. 
+Since the overall schedule is the result of independent presudo-random computations,
+it is effectively a Poisson process.
 This creates the potential for both leadership clashes (where two or more stakeholders 
-are scheduled to produce a block in the same slot) and empty slots (where no stakeholder 
-is scheduled to produce a block). In order to compensate for the empty slots, 
-the slot time is reduced compared to Ouroboros Classic, so that the overall rate 
-of production of blocks is broadly similar. The protocol is provably robust against 
+are scheduled to produce a block in the same slot, referred to as `slot battles') 
+and empty slots (where no stakeholder is scheduled to produce a block). 
+In order to compensate for the empty slots, the slot time is kept short, so that the average rate 
+of production of blocks is acceptable. The protocol is provably robust against 
 message delays up to a parameter $\Delta$ (measured in slot-times), and its security 
 degrades gracefully as the delays increase.
 
-This has implications for the performance of the overall Cardano system:
+This Poisson process has implications for the performance of the overall Cardano system:
 The non-uniform rate of production of blocks introduces a variable load on the block diffusion function;
-The shorter slot time increases the probability that a block will not be fully diffused before the end 
-of the slot (depending on the size of the block) hence may not be available to a leader in the immediately 
-following slot, causing a fork.
-Conversely, long sequences of empty slots allow all previous blocks to be diffused to every node, 
+The short slot time increases the probability that a block will not be fully diffused before the end 
+of the slot (depending on the size of the block), and hence may not be available to a leader in the immediately 
+following slot, causing a fork (referred to as a `height battle').
+Conversely, long sequences of empty slots (which must occur from time to time) 
+allow all previous blocks to be diffused to every node, 
 ensuring a consistent view of the chain to be established.
 
 This introduces a set of trade-offs, determined by Praos parameters:
@@ -752,8 +755,13 @@ Note that this is independent of the actual distribution of stake.
 
 Consequently, the probability of a run of $m$ successive empty slots (since these are independent trials) is:
 \begin{equation}
-P^{NL}_m =P_\text{m empty slots} = (1-f)^m
+P^{NL}_m =P_\text{m empty slots} = P_\text{no leader}^m = (1-f)^m
 \end{equation}
+We can render this in Haskell as:
+\begin{code}
+probNoLeader :: Probability -> Int -> Probability
+probNoLeader f m = (1 - f) ^ m
+\end{code}
 
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
