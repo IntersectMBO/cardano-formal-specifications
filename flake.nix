@@ -34,17 +34,12 @@
                     probability-polynomial = final.callCabal2nix "probability-polynomial" "${deltaq}/lib/probability-polynomial" {};
                     deltaq = final.callCabal2nix "deltaq" "${deltaq}/lib/deltaq" {};
 
-
-                    # checks for influxdb perform network operations, not permitted in this context
-                    # influxdb = prev.haskell.lib.dontCheck (final.callCabal2nix "influxdb" "${pnsol-influxdb}" {});
-
                     # want a later hsql-pool that is bundled with the nixpkgs
-                    # snapshot of hackage (should be checked if still needed
-                    # at major update time)
+                    # snapshot of hackage (should be checked if still needed at major update time)
                     # hasql-pool = prev.haskell.lib.dontCheck (final.callHackage "hasql-pool" "1.1" {});
 
                     # the cabal project containing the (locally) associated library
-                    # "nhc-qed-support" = final.callCabal2nix "nhc-qed-support" "${self}/nhc-qed-support" {};
+                    praos1 = final.callCabal2nix "praos1" "${self}/praos1" {};
                   };
                 };
               };
@@ -57,7 +52,6 @@
                 # local dependencies go here
           };
 
-
         defaultPackage = self.packages.${system}.${packageName};
 
         devShell = pkgs.mkShell {
@@ -66,6 +60,7 @@
             cabal-install
             ghcid
             haskell-language-server
+            lhs2tex
           ];
           # other inputs needed (typically to allow cabal to work properly)
           nativeBuildInputs = [
