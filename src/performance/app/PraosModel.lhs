@@ -2,12 +2,8 @@
 % NB This document contains Haskell code that generates the figures: see the README for instructions on how to run it.
 \usepackage[a4paper, portrait, margin=2.5cm]{geometry}
 %include polycode.fmt
-\usepackage{array,multirow,subfig,hyperref,booktabs}
-\usepackage[english]{babel}
-\usepackage[utf8x]{inputenc}
-\usepackage[mathletters]{ucs}
-\usepackage[en-GB]{datetime2}
-\usepackage{amsmath,amssymb,dsfont,wasysym,stmaryrd,mathrsfs,turnstile,cancel,graphicx,mathtools,listings,caption,xcolor,calligra,chemarrow}
+\usepackage{array,multirow,hyperref,booktabs} 
+\usepackage{graphicx} 
 % Local definitions
 \graphicspath{ {./Inserts/}}
 \usepackage[most]{tcolorbox}
@@ -355,6 +351,30 @@ Length & \multicolumn{4}{c}{Node degree}   \\
 It can be seen that for a block to have a high probability of arriving within the $2$s slot time, 
 the block size must be not much more than $64$kB.
 
+We can confirm the effect of block size on the probability of a fork by combining the \dq{}
+for the transfer delay with the probability of an $n$-slot gap in block production from Appendix \ref{sec:praos-leadership}:
+\begin{code}
+{-forkProbability :: Probability Rational -> Duration Rational -> DQ -> Probability Rational
+forkProbability f slotTime d = 1 - probNoFork f slotTime d
+  where
+    accumulateProbability :: Probability Rational -> Duration Rational -> DQ -> Int -> Probability Rational
+    -- for each slot, we multiply the probability of no leader before that slot 
+    -- by the probability of successful diffusion within that time, and then sum over the slots
+    accumulateProbability f' n d' s = sum (map (\i -> probNoLeader f' i * successWithin d' (i * s)) [1..n])
+    probNoFork :: Probability Rational -> Duration Rational -> DQ -> Probability Rational
+    -- we accumulate probability over a finite number of slots, determined either by diffusion certainty
+    -- or by an arbitrary maximum number of slots
+    probNoFork f' slotTime' d' = case deadline d' of
+      -- if the diffusion can fail, we sum the probabilities up to an arbitrary cutoff
+      Abandoned -> accumulateProbability f' slotTime' d' 100 -- ToDO: should depend on f
+      -- if the diffusion probability reaches 1 by a time t, we can sum the tail of the Poisson series
+      Occurs t  -> accumulateProbability f' slotTime' d' limitSlot + probNoLeaderTail f' limitSlot
+        where
+          --Duration s = slotTime'
+          limitSlot = ceiling . fromRational (t/slotTime')-}
+\end{code}
+where $f$ is the probability of a fork, and $d$ is the \dq{} for the transfer delay.
+
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
 However, in the real system there are additional steps:
@@ -613,7 +633,7 @@ getBlock n b = passHeader n b .>>. goGetBlock n b
     goGetBlock :: Int -> BlockContents -> DQ
     goGetBlock 0 b'  = adoptBlock b' -- we are recursing forward to the next block producer
     goGetBlock n' b' = 
-      ((checkBlock b .>>. getBlock (n-1) b) ./\. requestBlock b) .>>. transferBlock b
+      ((checkBlock b' .>>. getBlock (n-1) b') ./\. requestBlock b') .>>. transferBlock b'
 \end{code}
 With these functions we can generate the CDFs for the total time for a block of each type to be 
 transferred and verified from one node to another via a number of hops:
@@ -754,13 +774,23 @@ P_\text{no leader} = \prod_{i=1}^{N}(1-f)^{\alpha_i} = (1-f)^{\sum_{i=0}^N\alpha
 Note that this is independent of the actual distribution of stake.
 
 Consequently, the probability of a run of $m$ successive empty slots (since these are independent trials) is:
-\begin{equation}
+\begin{equation*}
 P^{NL}_m =P_\text{m empty slots} = P_\text{no leader}^m = (1-f)^m
-\end{equation}
+\end{equation*}
 We can render this in Haskell as:
 \begin{code}
-probNoLeader :: Probability -> Int -> Probability
+probNoLeader :: Probability Rational -> Int -> Probability Rational
 probNoLeader f m = (1 - f) ^ m
+\end{code}
+The probability of a run of more than $m$ empty slots is the sum of the tail of this series:
+\begin{equation}
+P^{NL}_{m\rightarrow \infty} = \sum_{i=m}^\infty P^{NL}_i = \sum_{i=0}^\infty P^{NL}_i - \sum_{i=0}^{m-1} P^{NL}_i
+= \frac{1}{f} - \sum_{i=0}^{m-1} (1-f)^i
+\end{equation}
+In Haskell this is:
+\begin{code}
+probNoLeaderTail :: Probability Rational -> Int -> Probability Rational
+probNoLeaderTail f m = (1/f) - sum (map ((1-f)^) [0..m-1])
 \end{code}
 
 \bibliographystyle{plain}
