@@ -65,6 +65,25 @@
           # other inputs needed (typically to allow cabal to work properly)
           nativeBuildInputs = [
             pkgs.zlib
+            (pkgs.texlive.combine {
+              inherit (pkgs.texlive)
+                scheme-medium
+                adjustbox
+                collectbox
+                environ
+                enumitem
+                pdfcol
+                tcolorbox
+                titling
+                ucs
+                upquote
+                polytable
+                lazylist
+                multirow
+                tikzfill
+                listingsutf8
+                        ;
+      })
           ] ;
           # all the inputs being used by the target package
           inputsFrom = builtins.attrValues self.packages.${system};
