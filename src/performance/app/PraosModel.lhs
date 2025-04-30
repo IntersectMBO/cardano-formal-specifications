@@ -62,7 +62,7 @@
 }
 \title{Modelling Block Diffusion in Cardano using \dq{}}
 \author{Peter Thompson\\Predictable Network Solutions Ltd.}
-\date{March 2025}
+\date{April 2025}
 
 \begin{document}
 \maketitle
@@ -353,8 +353,8 @@ the block size must be not much more than $64$kB.
 
 We can confirm the effect of block size on the probability of a fork by combining the \dq{}
 for the transfer delay with the probability of an $n$-slot gap in block production from Appendix 
-\ref{sec:praos-leadership}. The probability of avoiding a fork is the sum of the probabilities of
-avoiding a fork in each of the possible $n$ slots:
+\ref{sec:praos_leadership}. The probability of avoiding a fork is the sum of the probabilities of
+avoiding a fork in each of the possible slots:
 \begin{equation*}
 P^{NF} = \sum_{n=0}^{\infty} P^D_n \times P^{NL}_n
 \end{equation*}
@@ -363,8 +363,8 @@ and $P^{NL}_n$ is the probability of no leader being elected in $n$ slots.
 The probability of a fork is one minus this.
 \begin{code}
 forkProbability  :: Rational           -- active slot fraction
-                -> Rational           -- slot time
-                -> DQ                 -- transfer delay  
+                -> Rational          -- slot time
+                -> DQ                -- transfer delay  
                 -> Rational
 forkProbability f slotTime d = 1 - probNoFork f slotTime d
   where
@@ -374,26 +374,22 @@ forkProbability f slotTime d = 1 - probNoFork f slotTime d
     probNoFork f' slotTime' d' = case deadline d' of
       -- if the diffusion can fail, we sum the probabilities up to an arbitrary cutoff
       Abandoned -> accumulateProbability f' slotTime' d' 100 -- ToDo: should depend on f
-      -- if the diffusion probability reaches 1 by a time t, we can sum the tail of the leadership series
+      -- if the diffusion probability reaches 1 by a time t, we can stop
       Occurs t  -> accumulateProbability f' slotTime' d' (ceiling (t/slotTime')) 
-    accumulateProbability  :: Rational           -- active slot fraction
-                -> Rational           -- slot time
-                -> DQ                 -- transfer delay
-                -> Int                -- slot number
-                -> Rational
-    -- for each slot, we multiply the probability of no leader before that slot 
-    -- by the probability of successful diffusion within that time, and then sum over n slots
     accumulateProbability f' s d' n = 
+    -- for each slot, we multiply the probability of no leader before that slot by the
+    -- probability of successful diffusion within that time, and then sum over n slots
       sum (map (\i -> probNoLeader f' i * diffusionProbDensity d' s i) [1..n])
         where
           diffusionProbDensity d'' s' i' = 
-            successWithin d'' (fromIntegral i' * s') - successWithin d'' (fromIntegral (i' - 1) * s')
+            successWithin d'' (fromIntegral i' * s') - 
+            successWithin d'' (fromIntegral (i' - 1) * s')
 \end{code}
 where $f$ is the probability of a fork, and $d$ is the \dq{} for the transfer delay.
 Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
 a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
 %options ghci -fglasgow-exts
-\eval{fromRational . forkProbability 0.02 2 (blendedDelayNode10 B64)}.
+\eval{(fromRational . forkProbability 0.02 2 (blendedDelayNode10 B64)) :: Double}.
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
