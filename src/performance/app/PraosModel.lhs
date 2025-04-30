@@ -352,38 +352,48 @@ It can be seen that for a block to have a high probability of arriving within th
 the block size must be not much more than $64$kB.
 
 We can confirm the effect of block size on the probability of a fork by combining the \dq{}
-for the transfer delay with the probability of an $n$-slot gap in block production from Appendix \ref{sec:praos-leadership}:
+for the transfer delay with the probability of an $n$-slot gap in block production from Appendix 
+\ref{sec:praos-leadership}. The probability of avoiding a fork is the sum of the probabilities of
+avoiding a fork in each of the possible $n$ slots:
+\begin{equation*}
+P^{NF} = \sum_{n=0}^{\infty} P^D_n \times P^{NL}_n
+\end{equation*}
+where $P^D_n$ is the probability of a block being transferred in $n$ slots, 
+and $P^{NL}_n$ is the probability of no leader being elected in $n$ slots.
+The probability of a fork is one minus this.
 \begin{code}
-forkProbability :: Rational           -- active slot fraction
+forkProbability  :: Rational           -- active slot fraction
                 -> Rational           -- slot time
                 -> DQ                 -- transfer delay  
                 -> Rational
 forkProbability f slotTime d = 1 - probNoFork f slotTime d
   where
-    accumulateProbability :: Rational           -- active slot fraction
-                          -> Rational           -- slot time
-                          -> DQ                 -- transfer delay
-                          -> Int                -- slot number
-                          -> Rational
-    -- for each slot, we multiply the probability of no leader before that slot 
-    -- by the probability of successful diffusion within that time, and then sum over n slots
-    accumulateProbability f' s d' n = 
-    -- probNoLeader :: Rational -> Int -> Probability Rational
-    -- successWithin :: o -> Duration o -> Probability o
-      sum (map (\i -> probNoLeader f' i * successWithin d' (fromIntegral i * s)) [1..n])
     probNoFork :: Rational -> Rational -> DQ -> Rational
     -- we accumulate probability over a finite number of slots, determined either by 
     -- diffusion certainty or by an arbitrary maximum number of slots
-    -- deadline :: o -> Eventually (Duration o)
     probNoFork f' slotTime' d' = case deadline d' of
       -- if the diffusion can fail, we sum the probabilities up to an arbitrary cutoff
-      Abandoned -> accumulateProbability f' slotTime' d' 100 -- ToDO: should depend on f
-      -- if the diffusion probability reaches 1 by a time t, we can sum the tail of the Poisson series
-      Occurs t  -> accumulateProbability f' slotTime' d' limitSlot + probNoLeaderTail f' limitSlot
+      Abandoned -> accumulateProbability f' slotTime' d' 100 -- ToDo: should depend on f
+      -- if the diffusion probability reaches 1 by a time t, we can sum the tail of the leadership series
+      Occurs t  -> accumulateProbability f' slotTime' d' (ceiling (t/slotTime')) 
+    accumulateProbability  :: Rational           -- active slot fraction
+                -> Rational           -- slot time
+                -> DQ                 -- transfer delay
+                -> Int                -- slot number
+                -> Rational
+    -- for each slot, we multiply the probability of no leader before that slot 
+    -- by the probability of successful diffusion within that time, and then sum over n slots
+    accumulateProbability f' s d' n = 
+      sum (map (\i -> probNoLeader f' i * diffusionProbDensity d' s i) [1..n])
         where
-          limitSlot = ceiling (t/slotTime')
+          diffusionProbDensity d'' s' i' = 
+            successWithin d'' (fromIntegral i' * s') - successWithin d'' (fromIntegral (i' - 1) * s')
 \end{code}
 where $f$ is the probability of a fork, and $d$ is the \dq{} for the transfer delay.
+Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
+a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
+%options ghci -fglasgow-exts
+\eval{fromRational . forkProbability 0.02 2 (blendedDelayNode10 B64)}.
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
@@ -794,23 +804,7 @@ probNoLeader :: Rational -- active slot fraction
              -> Rational -- probability of no leader
 probNoLeader f m = (1 - f) ^ m
 \end{code}
-The probability of a run of more than $m$ empty slots is the sum of the tail of this series:
-\begin{array*}
-P^{NL}_{m\rightarrow \infty} &= \sum_{i=m}^\infty P^{NL}_i \\
- &= \sum_{i=0}^\infty P^{NL}_i - \sum_{i=0}^{m-1} P^{NL}_i \\
- &= \frac{1}{f} - \sum_{i=0}^{m-1} (1-f)^i\\
- &= \frac{1}{f} + \frac{(1-f)^m - 1}{f} \\
- &= \frac{(1-f)^m}{f} 
-\end{array*}
-using the standard result that the finite sum of a geometric series for which $|r| < 1$ is:
-\begin{equation*}
-sum_{k=0}^n ar^k = a \frac{1 - r^{n+1}}{1 - r}
-\end{equation*}
-In Haskell this is:
-\begin{code}
-probNoLeaderTail :: Rational -> Int -> Rational
-probNoLeaderTail f m = (1 - f) ^ m / f
-\end{code}
+
 
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
