@@ -656,15 +656,17 @@ transferred and verified from one node to another via a number of hops:
 \begin{code}
 pipelindedMultiHopScript :: Layout Double Double
 pipelindedMultiHopScript = 
-  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Script) hopRange))
-
+  plotCDFs "" ((zip (map show hopRange) (map (`getBlock` Script) hopRange)) ++
+              [("One hop", oneHopTransfer Script), ("Two hops", twoHopTransfer Script)])
 pipelindedMultiHopValue :: Layout Double Double
 pipelindedMultiHopValue = 
-  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Value) hopRange))
+  plotCDFs "" ((zip (map show hopRange) (map (`getBlock` Value) hopRange)) ++
+              [("One hop", oneHopTransfer Value), ("Two hops", twoHopTransfer Value)])
 
 pipelindedMultiHopBounding :: Layout Double Double
 pipelindedMultiHopBounding = 
-  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Bounding) hopRange))
+  plotCDFs "" ((zip (map show hopRange) (map (`getBlock` Bounding) hopRange)) ++
+              [("One hop", oneHopTransfer Bounding), ("Two hops", twoHopTransfer Bounding)])
 \end{code}
 We can use a weighted choice of the number of hops, as before, 
 to model the effect of the path length distribution:
