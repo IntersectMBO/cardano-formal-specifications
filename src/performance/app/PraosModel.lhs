@@ -637,19 +637,19 @@ twoHopTransfer b = doSequentially [forgeBlock b, announceBlock b,               
 We can generalise this to $n$ hops using recursion for both the header propagation and the block body transfers:
 \begin{code}
 passHeader :: Int -> BlockContents -> DQ -- pass the header along a path of length n
-passHeader n b  
-  | n == 0    = forgeBlock b -- we are recursing down to the block producer
-  | otherwise = doSequentially [passHeader (n-1) b, validateHeader b, announceBlock b]
+passHeader n b
+  | n == 1 = validateHeader b
+  | otherwise = doSequentially [validateHeader b, announceBlock b, passHeader (n - 1) b]
 
 getBlock :: Int -> BlockContents -> DQ  -- pass the block along a path of length n
 -- we must first receive the header before we can request the block from nodes that 
 -- have already received the header and may have the block body
-getBlock n b = passHeader n b .>>. goGetBlock n b
+getBlock n b = doSequentially [forgeBlock b, announceBlock b, passHeader n b, requestBlock b, goGetBlock n b]
   where
-    goGetBlock :: Int -> BlockContents -> DQ
-    goGetBlock 0 b'  = adoptBlock b' -- we are recursing forward to the next block producer
-    goGetBlock n' b' = 
-      ((checkBlock b' .>>. goGetBlock (n-1) b') ./\. requestBlock b') .>>. transferBlock b'
+    goGetBlock :: Int -> BlockContents -> DQ 
+    goGetBlock n b
+      | n == 1 = doSequentially [transferBlock b, checkBlock b, adoptBlock b]
+      | otherwise = transferBlock b .>>. ((checkBlock b ./\. requestBlock b) .>>. goGetBlock (n - 1) b)
 \end{code}
 With these functions we can generate the CDFs for the total time for a block of each type to be 
 transferred and verified from one node to another via a number of hops:
