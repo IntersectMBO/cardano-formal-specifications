@@ -62,7 +62,7 @@
 }
 \title{Modelling Block Diffusion in Cardano using \dq{}}
 \author{Peter Thompson\\Predictable Network Solutions Ltd.}
-\date{April 2025}
+\date{May 2025}
 
 \begin{document}
 \maketitle
