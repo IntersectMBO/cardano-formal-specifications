@@ -1,4 +1,4 @@
-cabal-version:      3.12
+cabal-version:      2.2
 -- The cabal-version field refers to the version of the .cabal specification,
 -- and can be different from the cabal-install (the tool) version and the
 -- Cabal (the library) version you are using. As such, the Cabal (the library)
@@ -20,16 +20,22 @@ name:               proas1
 -- PVP summary:     +-+------- breaking API changes
 --                  | | +----- non-breaking API additions
 --                  | | | +--- code changes with no API change
-version:            0.1.0.0
+version:            0.1.2.0
 
 -- A short (one-line) description of the package.
-synopsis: An implemnetation of the Praos model from the Mind Your Outcomes paper
+synopsis: A performance model of Praos block diffusion
 
 -- A longer description of the package.
--- description:
+description: 
+    This package implements a performance model of the Praos block diffusion
+    protocol. The model is based on the paper "Mind Your Outcomes", published in Computers,
+    which can be found at: https://www.mdpi.com/2073-431X/11/3/45
+    The model is implemented in Literate Haskell and uses the deltaq library for
+    computing the diffusion time of blocks. The model is designed to be used
+    for performance analysis and to understand the impact of different parameters.
 
 -- The license under which the package is released.
-license:            NONE
+license:            BSD-3-Clause
 
 -- The package author(s).
 author:             Peter Thompson
@@ -38,7 +44,7 @@ author:             Peter Thompson
 maintainer:         peter.thompson@pnsol.com
 
 -- A copyright notice.
--- copyright:
+copyright:          2025 Predictable Network Solutions Ltd.
 build-type:         Simple
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
@@ -58,16 +64,16 @@ executable praos1
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules: PraosModel
+    other-modules:    PraosModel
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.2.0,
-                      deltaq ^>= 1.0.0.0,
-                      Chart ^>= 1.9.5,
-                      Chart-cairo ^>= 1.9.4
+    build-depends:    base >=4.17.2.0,
+                      deltaq >= 1.0.0.0,
+                      Chart >= 1.9.5,
+                      Chart-cairo >= 1.9.4
 
     -- Directories containing source files.
     hs-source-dirs:   app

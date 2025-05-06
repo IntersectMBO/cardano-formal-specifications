@@ -2,14 +2,10 @@
 % NB This document contains Haskell code that generates the figures: see the README for instructions on how to run it.
 \usepackage[a4paper, portrait, margin=2.5cm]{geometry}
 %include polycode.fmt
-%\graphicspath{ {./Inserts/}}
-\usepackage{array,multirow,subfig,hyperref,booktabs}
-\usepackage[english]{babel}
-\usepackage[utf8x]{inputenc}
-\usepackage[mathletters]{ucs}
-\usepackage[en-GB]{datetime2}
-\usepackage{amsmath,amssymb,dsfont,wasysym,stmaryrd,mathrsfs,turnstile,cancel,graphicx,mathtools,listings,caption,xcolor,calligra,chemarrow}
+\usepackage{array,multirow,hyperref,booktabs} 
+\usepackage{graphicx} 
 % Local definitions
+\graphicspath{ {./Inserts/}}
 \usepackage[most]{tcolorbox}
 \makeatletter
 \newcommand{\labitem}[2]{%
@@ -66,7 +62,7 @@
 }
 \title{Modelling Block Diffusion in Cardano using \dq{}}
 \author{Peter Thompson\\Predictable Network Solutions Ltd.}
-\date{February 2025}
+\date{May 2025}
 
 \begin{document}
 \maketitle
@@ -82,6 +78,7 @@ module PraosModel
         blendedHopCDFNode10',
         pipelindedMultiHopScript,
         pipelindedMultiHopValue,
+        pipelindedMultiHopBounding,
         comparedCDFNode10
     )
 where
@@ -95,13 +92,15 @@ import Graphics.Rendering.Chart (Layout)
 \paragraph{Note on the generation of this document}
 The Haskell code in this document generates the figures that are included in the text.
 The code is written in a literate style, with the code blocks interspersed with the text.
-A README file is included in the repository that explains how to run the code to generate the figures.
+A README file is included in the repository that explains how to run the code to generate the figures,
+and how to produce the final pdf.
 Readers are invited to clone the repository and experiment with changing parameters to see how the figures change.
-\section{Introduction}
+\section{Introduction}\footnote{The early sections of this document are largely reproduced from \cite{computers11030045}.}
 Ouroboros Praos uses the distribution of `stake' in the system (i.e. the value of ADA 
 controlled by each node) to randomly determine which node (if any) is authorised to 
 produce a new block in the chain during a specific time interval (a `slot');
-the more stake a node controls, the more likely it is to be authorised to produce a block.
+the more stake a node controls, the more likely it is to be authorised to produce a block
+(see Appending \ref{sec:praos_leadership}).
 It is important that the selected block-producing node has a copy of the 
 most recently produced block, so that the new block can correctly extend the previous chain,
 otherwise there is a fork in the chain, meaning that at least one of the blocks will be discarded, wasting work.
@@ -124,9 +123,19 @@ next block. Since the granting of permission to generate a block is random, the 
 block generations is exponentially distributed.
 In Cardano, slots are one second long and blocks are produced every $20$ seconds on average.
 
+Given that the newly generated block takes some time to propagate through the network to the next 
+block-producing node, a fork will be avoided if and only if there is no leader elected in the intervening period.
+The probability of this is computed in Appendix \ref{sec:praos_leadership}.
+If the probability that the diffusion takes at most $m$ slots is $P^D_m$, and the probability of $m$
+successive slots with no leader is $P^{NL}_m$, then the probability $P^{NF}$ of avoiding a fork is:
+\begin{equation}
+P^{NF} = \sum_{m=0}^{\infty} P^D_m \times P^{NL}_m
+\end{equation}
+The main focus of this document is on the computation of $P^D_m$.
+
 \vspace{24pt}
 
-\begin{statementbox}[colback=white]{Problem Statement}
+\begin{statementbox}[colback=white]{Diffusion problem Statement}
 Starting from blockchain node $A$, what is the probability distribution of the time
 taken for a block to reach a different node $Z$, when $A$ and $Z$ are picked at random from the graph?
 \end{statementbox}
@@ -252,7 +261,7 @@ oneHopCDF = plotCDFs "" (zip (map show blockSizes) (map hop blockSizes))
 \end{code}
 \begin{figure}[htb]
   \centering
-        \includegraphics[width=0.7\textwidth]{Inserts/oneHopDelays.pdf}
+        \includegraphics[width=0.7\textwidth]{oneHopDelays.pdf}
   \caption{One-Hop Delay Distributions per Block Size}
   \label{fig:one-hop-delays}
 \end{figure}
@@ -286,14 +295,14 @@ wheras for a $1024$kB block size the $95^\mathit{th}$ percentile of transfer tim
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/multi-hop64k-plots}
+    \includegraphics[width=0.7\textwidth]{multi-hop64k-plots}
   \caption{Multi-Hop Delay Distributions for $64$k Block Size}
   \label{fig:multi-hop-64k}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/multi-hop-1024k-plots}
+    \includegraphics[width=0.7\textwidth]{multi-hop-1024k-plots}
   \caption{Multi-Hop Delay Distributions for $1024$k Block Size}
   \label{fig:multi-hop-1024k}
 \end{figure}
@@ -310,7 +319,8 @@ lengthProbsNode10 = [(1,0.40), (2,3.91), (3,31.06), (4,61.85), (5,2.78)]
 blendedDelayNode10 :: BlockSize -> DQ -- create a weighted sum of the hop distributions
 blendedDelayNode10 b = choices $ map (\(n,p) -> (p, hops n b)) lengthProbsNode10
 blendedHopCDFNode10 :: Layout Double Double
-blendedHopCDFNode10 = plotCDFs "" (zip (map show blockSizes) (map blendedDelayNode10 blockSizes))
+blendedHopCDFNode10 = 
+  plotCDFs "" (zip (map show blockSizes) (map blendedDelayNode10 blockSizes))
 \end{code}
 \begin{table}[hbt]
 \begin{center}
@@ -334,12 +344,52 @@ Length & \multicolumn{4}{c}{Node degree}   \\
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/blended-hop-blocksizes}
+    \includegraphics[width=0.7\textwidth]{blended-hop-blocksizes}
   \caption{Multi-Hop Delay Distributions per Block Size in a Graph of $2500$ Degree-$10$ Nodes}
   \label{fig:multi-hop-all}
 \end{figure}
 It can be seen that for a block to have a high probability of arriving within the $2$s slot time, 
 the block size must be not much more than $64$kB.
+
+We can confirm the effect of block size on the probability of a fork by combining the \dq{}
+for the transfer delay with the probability of an $n$-slot gap in block production from Appendix 
+\ref{sec:praos_leadership}. The probability of avoiding a fork is the sum of the probabilities of
+avoiding a fork in each of the possible slots:
+\begin{equation*}
+P^{NF} = \sum_{n=0}^{\infty} P^D_n \times P^{NL}_n
+\end{equation*}
+where $P^D_n$ is the probability of a block being transferred in $n$ slots, 
+and $P^{NL}_n$ is the probability of no leader being elected in $n$ slots.
+The probability of a fork is one minus this.
+\begin{code}
+forkProbability  :: Rational           -- active slot fraction
+                -> Rational          -- slot time
+                -> DQ                -- transfer delay  
+                -> Rational
+forkProbability f slotTime d = 1 - probNoFork f slotTime d
+  where
+    probNoFork :: Rational -> Rational -> DQ -> Rational
+    -- we accumulate probability over a finite number of slots, determined either by 
+    -- diffusion certainty or by an arbitrary maximum number of slots
+    probNoFork f' slotTime' d' = case deadline d' of
+      -- if the diffusion can fail, we sum the probabilities up to an arbitrary cutoff
+      Abandoned -> accumulateProbability f' slotTime' d' 100 -- ToDo: should depend on f
+      -- if the diffusion probability reaches 1 by a time t, we can stop
+      Occurs t  -> accumulateProbability f' slotTime' d' (ceiling (t/slotTime')) 
+    accumulateProbability f' s d' n = 
+    -- for each slot, we multiply the probability of no leader before that slot by the
+    -- probability of successful diffusion within that time, and then sum over n slots
+      sum (map (\i -> probNoLeader f' i * diffusionProbDensity d' s i) [1..n])
+        where
+          diffusionProbDensity d'' s' i' = 
+            successWithin d'' (fromIntegral i' * s') - 
+            successWithin d'' (fromIntegral (i' - 1) * s')
+\end{code}
+where $f$ is the active slot fraction, and $d$ is the \dq{} for the transfer delay.
+%Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
+%a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
+%options ghci -fglasgow-exts
+%\eval{(fromRational . forkProbability 0.02 2 (blendedDelayNode10 B64)) :: Double}.
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
@@ -356,9 +406,10 @@ Steps 3 - 5 are then repeated by each node in the path from the block producer t
 Many of these steps will depend on the size of the block and the complexity of the scripts it contains.
 For example, the time taken to verify a block will depend on the number and complexity of scripts in the block.
 We will consider the block contents divided into two types: \textit{value} and \textit{script}, with fixed sizes,
-ignoring mixed cases for simplicity:
+we do not explicitly consider mixed cases for simplicity, but posit a synthetic bounding case that is
+the worst of the two in all dimensions:
 \begin{code}
-data BlockContents = Value | Script
+data BlockContents = Value | Script | Bounding
   deriving (Show, Eq)
 forgeBlock     :: BlockContents -> DQ
 announceBlock  :: BlockContents -> DQ
@@ -409,14 +460,18 @@ Using measurements taken from the benchmarking cluster\footnote{Thanks to Michae
 for the 10.1.4 node release, as shown in tables
 \ref{tab:block-forging} and \ref{tab:block-adoption}, we can give values for these functions:
 \begin{code}
-forgeBlock Value      = wait 0.00087 -- Leadership to forged
-forgeBlock Script     = wait 0.00016
-announceBlock Value   = wait 0.00073 -- Forged to announced
-announceBlock Script  = wait 0.00058
-requestBlock Value    = wait 0.00146 -- Notice to fetch request
-requestBlock Script   = wait 0.00119
-adoptBlock Value      = wait 0.08461 -- Fetched to adopted
-adoptBlock Script     = wait 0.05865
+forgeBlock Value       = wait 0.00087 -- Leadership to forged
+forgeBlock Script      = wait 0.00016
+forgeBlock Bounding    = forgeBlock Script ./\. forgeBlock Value
+announceBlock Value    = wait 0.00073 -- Forged to announced
+announceBlock Script   = wait 0.00058
+announceBlock Bounding = announceBlock Script ./\. announceBlock Value
+requestBlock Value     = wait 0.00146 -- Notice to fetch request
+requestBlock Script    = wait 0.00119
+requestBlock Bounding  = requestBlock Script ./\. requestBlock Value
+adoptBlock Value       = wait 0.08461 -- Fetched to adopted
+adoptBlock Script      = wait 0.05865
+adoptBlock Bounding    = adoptBlock Script .>>. adoptBlock Value -- need to validate both
 \end{code}
 We can then combine these with the transfer delays to give the total time for a block to be forged, 
 transferred and verified from one node to another:
@@ -434,12 +489,15 @@ and the length distribution of a hop, which for the time being we will take to b
 \begin{code}
 transferBlock b = choices [(1,short' b),(1,medium' b),(1,long' b)]
   where -- estimated values
-    short' Value    = wait 0.3
-    short' Script   = wait 0.01
-    medium' Value   = wait 0.2
-    medium' Script  = wait 0.05  
-    long' Value     = wait 0.8
-    long' Script    = wait 0.1
+    short' Value     = wait 0.3
+    short' Script    = wait 0.01
+    short' Bounding  = short' Script ./\. short' Value
+    medium' Value    = wait 0.2
+    medium' Script   = wait 0.05  
+    medium' Bounding = medium' Script ./\. medium' Value
+    long' Value      = wait 0.8
+    long' Script     = wait 0.1
+    long' Bounding   = long' Script ./\. long' Value
 \end{code}
 The total time for a block to be forged by the selected node and diffused to the next selected node 
 in a network with 2500 nodes of degree 10 is then:
@@ -455,13 +513,13 @@ blendedHopCDFNode10' :: Layout Double Double
 blendedHopCDFNode10' = 
   plotCDFs "" (zip (map show blockContents) (map totalTimeNode10 blockContents))
     where
-      blockContents = [Value, Script]
+      blockContents = [Value, Script, Bounding]
 \end{code}
 The CDF of the total time for a block of each type to be transferred and verified from one node to another in a 
 network with 2500 nodes of degree 10 is shown in Figure \ref{fig:multi-hop-verified}:
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/verified-hop-blocksizes}
+    \includegraphics[width=0.7\textwidth]{verified-hop-blocksizes}
   \caption{Multi-Hop Delay Distributions per Block Type in a Graph of $2500$ Degree-$10$ Nodes}
   \label{fig:multi-hop-verified}
 \end{figure}
@@ -506,7 +564,7 @@ so that the upstream peer does not have to wait unnecessarily.
 So we can refine $o_{A \rightsquigarrow Z}$ into
 $o_{Z \rightsquigarrow A}^{\mathit{ph}} \SeqDelta o_{A \rightsquigarrow Z}^{\mathit{th}} \SeqDelta o_{Z \rightsquigarrow A}^{\mathit{pb}} \SeqDelta o_{A \rightsquigarrow Z}^{\mathit{tb}}$.
 
-However, a minor compromise with regard to DoS resistance can significantly reduce the latency of block propagation.
+However, a minor compromise with regard to DoS resistance can reduce the latency of block propagation.
 This is called `Header Pipelining' (or `Diffusion Pipelining'), in which a new header is forwarded to the next node before 
 the body has been received, and the body is forwarded before it has been fully verified.
 To contain the risk of DoS attacks, the recipient node will not request another header from the sending node
@@ -546,9 +604,11 @@ whose timing is not directly measured, so we assign them a nominal millisecond.
 validateHeader :: BlockContents -> DQ
 validateHeader Value      = wait 0.0001 -- Assumed de minimus time
 validateHeader Script     = wait 0.0001 -- Assumed de minimus time
+validateHeader Bounding   = validateHeader Script ./\. validateHeader Value
 checkBlock :: BlockContents -> DQ
 checkBlock Value      = wait 0.0001 -- Assumed de minimus time
 checkBlock Script     = wait 0.0001 -- Assumed de minimus time
+checkBlock Bounding   = checkBlock Script ./\. checkBlock Value
 \end{code}
 The complication here is a \textit{last-to-finish} synchronisation between receiving and checking 
 the block body from the upstream node and receiving the request for it from the downstream node; 
@@ -574,60 +634,71 @@ twoHopTransfer b = doSequentially [forgeBlock b, announceBlock b,               
                                    transferBlock b,                                           -- done by node B
                                    checkBlock b, adoptBlock b]                                -- done by node Z
 \end{code}
-We can generalise this to $n$ hops using recursion for both the header propagation and the block body transfers:
+We can generalise this to $n$ hops\footnote{This version due to Vashti Galpin} 
+using recursion for both the header propagation and the block body transfers:
 \begin{code}
 passHeader :: Int -> BlockContents -> DQ -- pass the header along a path of length n
-passHeader n b  
-  | n == 0    = forgeBlock b -- we are recursing down to the block producer
-  | otherwise = doSequentially [passHeader (n-1) b, validateHeader b, announceBlock b]
+passHeader n b
+  | n == 1 = validateHeader b
+  | otherwise = doSequentially [validateHeader b, announceBlock b, passHeader (n - 1) b]
 
 getBlock :: Int -> BlockContents -> DQ  -- pass the block along a path of length n
 -- we must first receive the header before we can request the block from nodes that 
 -- have already received the header and may have the block body
-getBlock n b = passHeader n b .>>. goGetBlock n b
+getBlock n b = doSequentially [forgeBlock b, announceBlock b, passHeader n b, 
+                               requestBlock b, goGetBlock n b]
   where
-    goGetBlock :: Int -> BlockContents -> DQ
-    goGetBlock 0 b'  = adoptBlock b' -- we are recursing forward to the next block producer
-    goGetBlock n' b' = 
-      ((checkBlock b .>>. getBlock (n-1) b) ./\. requestBlock b) .>>. transferBlock b
+    goGetBlock :: Int -> BlockContents -> DQ 
+    goGetBlock n b
+      | n == 1 = doSequentially [transferBlock b, checkBlock b, adoptBlock b]
+      | otherwise = 
+        transferBlock b .>>. ((checkBlock b ./\. requestBlock b) .>>. goGetBlock (n - 1) b)
 \end{code}
 With these functions we can generate the CDFs for the total time for a block of each type to be 
 transferred and verified from one node to another via a number of hops:
 \begin{code}
 pipelindedMultiHopScript :: Layout Double Double
 pipelindedMultiHopScript = 
-  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Script) hopRange))
-
+  plotCDFs "" ((zip (map show hopRange) (map (`getBlock` Script) hopRange)) ++
+              [("One hop", oneHopTransfer Script), ("Two hops", twoHopTransfer Script)])
 pipelindedMultiHopValue :: Layout Double Double
 pipelindedMultiHopValue = 
-  plotCDFs "" (zip (map show hopRange) (map (`getBlock` Value) hopRange))
+  plotCDFs "" ((zip (map show hopRange) (map (`getBlock` Value) hopRange)) ++
+              [("One hop", oneHopTransfer Value), ("Two hops", twoHopTransfer Value)])
+
+pipelindedMultiHopBounding :: Layout Double Double
+pipelindedMultiHopBounding = 
+  plotCDFs "" ((zip (map show hopRange) (map (`getBlock` Bounding) hopRange)) ++
+              [("One hop", oneHopTransfer Bounding), ("Two hops", twoHopTransfer Bounding)])
 \end{code}
 We can use a weighted choice of the number of hops, as before, 
 to model the effect of the path length distribution:
 \begin{code}
 pipelinedTimeNode10 :: BlockContents -> DQ
 pipelinedTimeNode10 b = choices $ map (\(n,p) -> (p, getBlock n b)) lengthProbsNode10
-
-pipelinedCDFNode10 :: Layout Double Double
-pipelinedCDFNode10 = 
-  plotCDFs "" (zip (map show blockContents) (map pipelinedTimeNode10 blockContents))
-    where
-      blockContents = [Value, Script]
 \end{code}
 The CDF of the total time for a block of each type to be transferred and verified from one node to another  
-over a series of hops using pipelining is shown in Figure \ref{fig:multi-hop-pipelined-script} for script-heavy blocks 
-and Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks.
+over a series of hops using pipelining is shown in Figure \ref{fig:multi-hop-pipelined-script} for script-heavy blocks,
+Figure \ref{fig:multi-hop-pipelined-value} for value-heavy blocks, and Figure \ref{fig:multi-hop-pipelined-bounding}
+for the synthetic bounding case. Note that the lines for the individual one and two hop cases overlay those 
+generated by the recursive general case.
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-script}
+    \includegraphics[width=0.7\textwidth]{pipelined-hop-script}
   \caption{Pipelined Delay Distributions for Script Block Type per Hop}
   \label{fig:multi-hop-pipelined-script}
 \end{figure}
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/pipelined-hop-value}
+    \includegraphics[width=0.7\textwidth]{pipelined-hop-value}
   \caption{Pipelined Delay Distributions for Value Block Type per Hop}
   \label{fig:multi-hop-pipelined-value}
+\end{figure}
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[width=0.7\textwidth]{pipelined-hop-bounding}
+  \caption{Pipelined Delay Distributions for Bounding Block Type per Hop}
+  \label{fig:multi-hop-pipelined-bounding}
 \end{figure}
 The pipelined case is compared with the non-pipelined case in Figure \ref{fig:multi-hop-compared}. 
 It can be seen that there is a reduction in the time taken for a block to be transferred and verified
@@ -639,14 +710,104 @@ comparedCDFNode10 =
                zip pipelinedLabels (map pipelinedTimeNode10 blockContents))
     where
       pipelinedLabels = map ((++ " (pipelined)") . show) blockContents
-      blockContents = [Value, Script]
+      blockContents = [Value, Script, Bounding]
 \end{code}
 \begin{figure}[htbp]
   \centering
-    \includegraphics[width=0.7\textwidth]{Inserts/compared-hop-blocktypes}
+    \includegraphics[width=0.7\textwidth]{compared-hop-blocktypes}
   \caption{Pipelined and un-piplined Delay Distributions per Block Type Compared}
   \label{fig:multi-hop-compared}
 \end{figure}
+\newpage
+\appendix
+\section{Praos Leader Selection}\label{sec:praos_leadership}
+Ouroboros Praos has significant operational differences from typical consensus algorithms. 
+Instead of a slot leader schedule being pre-computed, 
+each stakeholder separately computes its own schedule, based on its own private key. 
+Since the overall schedule is the result of independent presudo-random computations,
+it is effectively a Poisson process.
+This creates the potential for both leadership clashes (where two or more stakeholders 
+are scheduled to produce a block in the same slot, referred to as `slot battles') 
+and empty slots (where no stakeholder is scheduled to produce a block). 
+In order to compensate for the empty slots, the slot time is kept short, so that the average rate 
+of production of blocks is acceptable. The protocol is provably robust against 
+message delays up to a parameter $\Delta$ (measured in slot-times), and its security 
+degrades gracefully as the delays increase.
+
+This Poisson process has implications for the performance of the overall Cardano system:
+The non-uniform rate of production of blocks introduces a variable load on the block diffusion function;
+The short slot time increases the probability that a block will not be fully diffused before the end 
+of the slot (depending on the size of the block), and hence may not be available to a leader in the immediately 
+following slot, causing a fork (referred to as a `height battle').
+Conversely, long sequences of empty slots (which must occur from time to time) 
+allow all previous blocks to be diffused to every node, 
+ensuring a consistent view of the chain to be established.
+
+This introduces a set of trade-offs, determined by Praos parameters:
+\begin{itemize}
+\item Slot time;    
+\item Slot frequency;
+\item Number of active nodes;
+\item Block size;
+\item Slot occupancy probability;
+\item Maximum diffusion delay $\Delta$.
+\end{itemize}
+
+Which collectively affect the outcomes of the algorithm:
+\begin{itemize}
+\item Effective transaction rate;
+\item Wait time for inclusion in the chain;
+\item Probability of being included in a `losing' fork (requiring transaction resubmission);
+\item Rate of growth of longest chain.
+\end{itemize}
+The parameters are summarised in Table \ref{tab:parameters}.
+\begin{table}[htb]
+\centering
+\begin{tabular}{>{\hspace{0pt}}m{0.16\linewidth}>{\hspace{0pt}}m{0.477\linewidth}>{\hspace{0pt}}m{0.246\linewidth}>{\hspace{0pt}}m{0.025\linewidth}>{\hspace{0pt}}m{0.025\linewidth}} 
+\toprule
+\textbf{Parameter}                            & \textbf{Description}                                          & \textbf{Notes}                       &                                             &                                              \\
+$N$                                           & Number of active nodes                                        & Expected to be \textasciitilde{}2000 & \multirow{3}{0.025\linewidth}{\hspace{0pt}} & \multirow{5}{0.025\linewidth}{\hspace{0pt}}  \\
+$T_s$                                         & Duration of a slot                                            & Expected to be \textasciitilde{}1s  &                                             &                                              \\
+$f$                                           & Active slot fraction                                          & $0 < f \leq 1$ (set at 1/20)         &                                             &                                              \\
+$\Delta$                                      & Maximum number of slots before a diffused message is received & $\Delta \geq 1$                      & \multirow{2}{0.025\linewidth}{\hspace{0pt}} &                                              \\
+\bottomrule
+\end{tabular}\caption{Parameters for the Praos protocol.}
+\label{tab:parameters}
+\end{table}
+\subsection{Distribution of leadership}
+From \cite{10.1007/978-3-319-78375-8_3}, the probability of stakeholder $U_i$ with relative stake $\alpha_i$ 
+being leader in any slot is:
+\begin{equation}
+p_i = \Phi_f(\alpha_i) = 1 - (1-f)^{\alpha_i}
+\end{equation}
+If each of the $N$ active nodes has an equal amount of stake, $\alpha_i=\frac{1}{N}$, 
+and hence equal probability of being a leader in any particular slot, then we would have:
+\begin{equation}
+\forall_i\ {p_i} =  1 - (1-f)^{\frac{1}{N}}
+\end{equation}
+In general, the probability that stakeholder $U_i$ is \textit{not} the leader is $1-p_i = (1-f)^{\alpha_i}$, 
+and so the probability that \textit{no} stakeholder is the leader (i.e. we have an empty slot) is
+given by multiplying the probabilities (since each node decides independently whether it is the leader):
+\begin{equation}
+P_\text{no leader} = \prod_{i=1}^{N}(1-f)^{\alpha_i} = (1-f)^{\sum_{i=0}^N\alpha_i} = 1 - f
+\end{equation}
+
+(Hence the definition of $f$ as the active slot fraction). 
+Note that this is independent of the actual distribution of stake.
+
+Consequently, the probability of a run of $m$ successive empty slots (since these are independent trials) is:
+\begin{equation*}
+P^{NL}_m =P_\text{m empty slots} = P_\text{no leader}^m = (1-f)^m
+\end{equation*}
+We can render this in Haskell as:
+\begin{code}
+probNoLeader :: Rational -- active slot fraction
+             -> Int      -- number of slots
+             -> Rational -- probability of no leader
+probNoLeader f m = (1 - f) ^ m
+\end{code}
+
+
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
 \end{document}

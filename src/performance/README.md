@@ -16,3 +16,5 @@ A pdf document of the performance model can be generated using the following com
 (note: the repetition of `pdflatex` is needed for the contents, figures, tables and citations to render correctly)
 
 This generates a file `PraosModel.pdf`
+
+The nix flake in the same directory as this README will install the appropriate toolchain.

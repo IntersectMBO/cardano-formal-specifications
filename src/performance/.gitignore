@@ -9,4 +9,5 @@
 *.ptb
 *.bbl
 *.blg
+*.md
 dist-newstyle
