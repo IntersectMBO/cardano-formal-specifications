@@ -142,7 +142,7 @@ first instance focusses on block headers. This is essentially the part
 of the chain that the consensus layer cares about.
 
 Generated PDF file:
-https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-fdee8d65f730471bd62e2177650a579d.pdf
+https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-f25982fd23b1e0baface9345c26549e0.pdf
 
 Source repository:
 https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec
