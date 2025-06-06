@@ -7,6 +7,8 @@
 % Local definitions
 \graphicspath{ {./Inserts/}}
 \usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{backgrounds,positioning,positioning,graphs,shapes.geometric}
 \makeatletter
 \newcommand{\labitem}[2]{%
 \def\@itemlabel{\textbf{#1.}}
@@ -386,10 +388,10 @@ forkProbability f slotTime d = 1 - probNoFork f slotTime d
             successWithin d'' (fromIntegral (i' - 1) * s')
 \end{code}
 where $f$ is the active slot fraction, and $d$ is the \dq{} for the transfer delay.
-%Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
-%a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
+Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
+a block size of 64kB, and active slot fraction of $0.05$ and a slot time of 1s, is 
 %options ghci -fglasgow-exts
-%\eval{(fromRational . forkProbability 0.02 2 (blendedDelayNode10 B64)) :: Double}.
+\eval{(fromRational . forkProbability 0.05 1 (blendedDelayNode10 B64)) :: Double}.
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
@@ -529,7 +531,6 @@ network with 2500 nodes of degree 10 is shown in Figure \ref{fig:multi-hop-verif
 In Cardano Shelley, an individual block transmission involves a dialogue between a sender node, $A$, and a recipient node, $Z$.
 %
 We represent the overall transmission as $o_{A \rightsquigarrow Z}$. This can be refined into the following sequence:
-%to demonstrate the scenario when the design engineer is about to study that  aspect of their system:
 \begin{enumerate}
   \item \textit{P}ermission for \textit{H}eader Transmission ($o_{Z \rightsquigarrow A}^{\mathit{ph}}$):
     Node $Z$ grants the permission to node $A$ to send it a header.
@@ -634,7 +635,37 @@ twoHopTransfer b = doSequentially [forgeBlock b, announceBlock b,               
                                    transferBlock b,                                           -- done by node B
                                    checkBlock b, adoptBlock b]                                -- done by node Z
 \end{code}
-We can generalise this to $n$ hops\footnote{This version due to Vashti Galpin} 
+An outcome diagram for the four-hop case is shown in figure \ref{fig:four-hop-pipeline}.
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}
+    [every node/.style = {circle,thick,draw=black,fill=orange!20},
+    square/.style={regular polygon,regular polygon sides=4,fill=white},minimum size=2mm,draw]
+    \graph [simple] {F->{A1/A->V1/V->FA1/$\forall$[rectangle,fill=white]->R1/R->T1/T->C1/C};
+            {FA1->A2/A->V2/V->FA2/$\forall$[rectangle,fill=white]->R2/R->J1/[square,inner sep=0pt]->T2/T->C2/C};
+            {FA2->A3/A->V3/V->FA3/$\forall$[rectangle,fill=white]->R3/R->J2/[square,inner sep=0pt]->T3/T->C3/C};
+            {FA3->A4/A->V4/V->FA4/$\forall$[rectangle,fill=white]->R4/R->J3/[square,inner sep=0pt]->T4/T->C4/C->Ad/D};
+             C1->J1;C2->J2;C3->J3};
+\draw[xshift=11.5cm, yshift=-1.5cm]
+node[rectangle, draw, left, text width=3.5cm, fill = white]
+{
+\tiny
+\begin{itemize}
+    \item F = Forge block
+    \item A = Announce
+    \item V = Verify header
+    \item R = Request block
+    \item T = transfer block
+    \item C = Check block
+    \item D = aDopt block
+\end{itemize}
+
+};
+\end{tikzpicture}
+\end{center}\caption{Four-hop header pipeline}\label{fig:four-hop-pipeline}
+\end{figure}
+We can generalise the outcome expressions to $n$ hops\footnote{This version due to Vashti Galpin} 
 using recursion for both the header propagation and the block body transfers:
 \begin{code}
 passHeader :: Int -> BlockContents -> DQ -- pass the header along a path of length n
