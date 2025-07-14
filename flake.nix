@@ -64,6 +64,7 @@
           ];
           # other inputs needed (typically to allow cabal to work properly)
           nativeBuildInputs = [
+            pkgs.svg2pdf
             pkgs.zlib
             (pkgs.texlive.combine {
               inherit (pkgs.texlive)

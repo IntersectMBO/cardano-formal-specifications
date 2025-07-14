@@ -10,4 +10,5 @@
 *.bbl
 *.blg
 *.md
+*.svg
 dist-newstyle
