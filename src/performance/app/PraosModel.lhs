@@ -386,10 +386,10 @@ forkProbability f slotTime d = 1 - probNoFork f slotTime d
             successWithin d'' (fromIntegral (i' - 1) * s')
 \end{code}
 where $f$ is the active slot fraction, and $d$ is the \dq{} for the transfer delay.
-%Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
-%a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
-%options ghci -fglasgow-exts
-%\eval{(fromRational . forkProbability 0.02 2 (blendedDelayNode10 B64)) :: Double}.
+Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
+a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
+%options ghci
+\eval{fromRational (forkProbability 0.02 2 (blendedDelayNode10 B64)) :: Double}.
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
