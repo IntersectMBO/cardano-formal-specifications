@@ -11,7 +11,7 @@ cabal-version:      2.2
 --   http://haskell.org/cabal/users-guide/
 --
 -- The name of the package.
-name:               proas1
+name:               praos1
 
 -- The package version.
 -- See the Haskell package versioning policy (PVP) for standards
