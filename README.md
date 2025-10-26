@@ -160,6 +160,7 @@ The block header specification is executable and usable for conformance testing.
 
 ## Networking specifications
 
+https://ouroboros-network.cardano.intersectmbo.org/pdfs/network-spec/network-spec.pdf
 
 ## Performance model
 
