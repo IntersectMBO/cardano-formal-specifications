@@ -171,7 +171,7 @@ timeliness of block diffusion can be investigated.
 
 ## Wallet
 
-There is an now unmaintained wallet spec that is still a useful as reference:
+There is an old unmaintained wallet spec that is still a useful as reference or a useful input to a new spec:
 
 https://github.com/cardano-foundation/cardano-wallet/blob/master/specifications/wallet/formal-specification-for-a-cardano-wallet.pdf
 
