@@ -169,7 +169,7 @@ block diffusion. This is intended to provide a baseline from which the
 potential consequences of parameter or design changes on the
 timeliness of block diffusion can be investigated.
 
-## Walet
+## Wallet
 
 There is an now unmaintained wallet spec that is still a useful as reference:
 
