@@ -26,6 +26,7 @@ covers new features for Cardano that are currently in the R&D phase.
 | [Consensus](#consensus-specifications) |
 | [Networking](#networking-specifications) |
 | [Performance model](#performance-model) |
+| [Wallet](#wallet) |
 
 | New features |
 |--------------|
@@ -167,6 +168,12 @@ a literate Haskell file that documents a performance model of Cardano
 block diffusion. This is intended to provide a baseline from which the
 potential consequences of parameter or design changes on the
 timeliness of block diffusion can be investigated.
+
+## Walet
+
+There is an now unmaintained wallet spec that is still a useful as reference:
+
+https://github.com/cardano-foundation/cardano-wallet/blob/master/specifications/wallet/formal-specification-for-a-cardano-wallet.pdf
 
 # New features
 
