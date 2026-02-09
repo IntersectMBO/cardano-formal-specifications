@@ -142,14 +142,15 @@ first instance focusses on block headers. This is essentially the part
 of the chain that the consensus layer cares about.
 
 Generated PDF file:
-https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-f25982fd23b1e0baface9345c26549e0.pdf
+https://ouroboros-consensus.cardano.intersectmbo.org/assets/files/consensus-spec-agda-5e7b0752412da1131e415baa3865525a.pdf
 
 Source repository:
 https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec
 
-A formal model of Ouroboros Praos and its corresponding proofs of
-safety and liveness are currently WIP, see
-https://github.com/input-output-hk/ouroboros-praos-formal-spec.
+A formal model of Ouroboros Praos and its proof of
+safety is located at
+https://github.com/input-output-hk/ouroboros-praos-formal-spec. The
+corresponding proof of liveness is currently WIP.
 
 ### Properties
 
