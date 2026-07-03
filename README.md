@@ -147,10 +147,9 @@ of the chain that the consensus layer cares about.
 Source repository:
 https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec
 
-A formal model of Ouroboros Praos and its proof of
-safety is located at
-https://github.com/input-output-hk/ouroboros-praos-formal-spec. The
-corresponding proof of liveness is currently WIP.
+A formal model of Ouroboros Praos and its proofs of
+safety and liveness is located at
+https://github.com/input-output-hk/ouroboros-praos-formal-spec.
 
 ### Properties
 
