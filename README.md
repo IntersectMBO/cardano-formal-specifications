@@ -150,7 +150,8 @@ https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec
 A formal model of Ouroboros Praos and its proof of
 safety is located at
 https://github.com/input-output-hk/ouroboros-praos-formal-spec. The
-corresponding proof of liveness is currently WIP.
+corresponding proof of liveness (chain growth and chain quality) is
+also complete.
 
 ### Properties
 
@@ -205,4 +206,4 @@ The [formal specification](https://github.com/input-output-hk/peras-design/blob/
 
 ## Leios
 
-The [formal specification](https://github.com/input-output-hk/ouroboros-leios-formal-spec) for Leios implements different variants of the Leios Protocol. In addition to the relational specification there is also a deterministic specification, that can be run as model in conformance tests.
+The [formal specification](https://github.com/input-output-hk/ouroboros-leios-formal-spec) for Leios implements different variants of the Leios Protocol. Safety and liveness for Leios are proven as an extension of Praos: an extension of a safe/live base chain is itself safe/live, with Praos's own safety and liveness (see above) entering as the base hypothesis. Conformance testing is done via the [trace verifier](https://github.com/input-output-hk/ouroboros-leios/tree/main/leios-trace-verifier), which checks a trace against the relational specification's operational step relation.
