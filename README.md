@@ -142,7 +142,7 @@ The consensus specification is a relatively new effort that in the
 first instance focusses on block headers. This is essentially the part
 of the chain that the consensus layer cares about.
 
-[Generated PDF file](./docs/consensus/consensus-spec-agda.pdf)
+[Agda specification](https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec/SPECIFICATION.md)
 
 Source repository:
 https://github.com/IntersectMBO/ouroboros-consensus/tree/main/docs/agda-spec
