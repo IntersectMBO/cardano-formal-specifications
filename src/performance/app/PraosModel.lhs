@@ -639,17 +639,23 @@ using recursion for both the header propagation and the block body transfers:
 \begin{code}
 passHeader :: Int -> BlockContents -> DQ -- pass the header along a path of length n
 passHeader n b
+| n <= 0 = wait 0
+  | n == 1 = validateHeader b
+  | otherwise = doSequentially [validateHeader b, announceBlock b, passHeader (n - 1) b]
   | n == 1 = validateHeader b
   | otherwise = doSequentially [validateHeader b, announceBlock b, passHeader (n - 1) b]
 
 getBlock :: Int -> BlockContents -> DQ  -- pass the block along a path of length n
 -- we must first receive the header before we can request the block from nodes that 
 -- have already received the header and may have the block body
-getBlock n b = doSequentially [forgeBlock b, announceBlock b, passHeader n b, 
-                               requestBlock b, goGetBlock n b]
+getBlock n b
+  | n <= 0 = wait 0
+  | otherwise = doSequentially [forgeBlock b, announceBlock b, passHeader n b, 
+                                requestBlock b, goGetBlock n b]
   where
     goGetBlock :: Int -> BlockContents -> DQ 
     goGetBlock n b
+      | n <= 0 = wait 0
       | n == 1 = doSequentially [transferBlock b, checkBlock b, adoptBlock b]
       | otherwise = 
         transferBlock b .>>. ((checkBlock b ./\. requestBlock b) .>>. goGetBlock (n - 1) b)
@@ -806,7 +812,6 @@ probNoLeader :: Rational -- active slot fraction
              -> Rational -- probability of no leader
 probNoLeader f m = (1 - f) ^ m
 \end{code}
-
 
 \bibliographystyle{plain}
 \bibliography{Inserts/DeltaQBibliography,Inserts/AdditionalEntries}
