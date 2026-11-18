@@ -126,7 +126,7 @@ In Cardano, slots are one second long and blocks are produced every $20$ seconds
 Given that the newly generated block takes some time to propagate through the network to the next 
 block-producing node, a fork will be avoided if and only if there is no leader elected in the intervening period.
 The probability of this is computed in Appendix \ref{sec:praos_leadership}.
-If the probability that the diffusion takes at most $m$ slots is $P^D_m$, and the probability of $m$
+If the probability that the diffusion completes during slot $m$ (counting the slot in which the block is forged as slot $0$) is $P^D_m$, and the probability of $m$
 successive slots with no leader is $P^{NL}_m$, then the probability $P^{NF}$ of avoiding a fork is:
 \begin{equation}
 P^{NF} = \sum_{m=0}^{\infty} P^D_m \times P^{NL}_m
@@ -348,7 +348,7 @@ Length & \multicolumn{4}{c}{Node degree}   \\
   \caption{Multi-Hop Delay Distributions per Block Size in a Graph of $2500$ Degree-$10$ Nodes}
   \label{fig:multi-hop-all}
 \end{figure}
-It can be seen that for a block to have a high probability of arriving within the $2$s slot time, 
+It can be seen that for a block to have a high probability of arriving within $2$s (two slots),
 the block size must be not much more than $64$kB.
 
 We can confirm the effect of block size on the probability of a fork by combining the \dq{}
@@ -356,40 +356,45 @@ for the transfer delay with the probability of an $n$-slot gap in block producti
 \ref{sec:praos_leadership}. The probability of avoiding a fork is the sum of the probabilities of
 avoiding a fork in each of the possible slots:
 \begin{equation*}
-P^{NF} = \sum_{n=0}^{\infty} P^D_n \times P^{NL}_n
+P^{NF} = \sum_{m=0}^{\infty} P^D_m \times P^{NL}_m
 \end{equation*}
-where $P^D_n$ is the probability of a block being transferred in $n$ slots, 
-and $P^{NL}_n$ is the probability of no leader being elected in $n$ slots.
-The probability of a fork is one minus this.
+where $P^D_m = \Pr[m T_s < D \le (m+1) T_s]$ is the probability of the block arriving during
+slot $m$, with $D$ the diffusion time measured from the start of the slot in which the block is
+forged and $T_s$ the slot duration, and $P^{NL}_m$ is the probability of no leader being
+elected in $m$ slots. The probability of a fork is one minus this.
 \begin{code}
 forkProbability  :: Rational           -- active slot fraction
                 -> Rational          -- slot time
                 -> DQ                -- transfer delay  
                 -> Rational
-forkProbability f slotTime d = 1 - probNoFork f slotTime d
+forkProbability f slotTime d = 1 - probNoFork
   where
-    probNoFork :: Rational -> Rational -> DQ -> Rational
-    -- we accumulate probability over a finite number of slots, determined either by 
-    -- diffusion certainty or by an arbitrary maximum number of slots
-    probNoFork f' slotTime' d' = case deadline d' of
-      -- if the diffusion can fail, we sum the probabilities up to an arbitrary cutoff
-      Abandoned -> accumulateProbability f' slotTime' d' 100 -- ToDo: should depend on f
-      -- if the diffusion probability reaches 1 by a time t, we can stop
-      Occurs t  -> accumulateProbability f' slotTime' d' (ceiling (t/slotTime')) 
-    accumulateProbability f' s d' n = 
-    -- for each slot, we multiply the probability of no leader before that slot by the
-    -- probability of successful diffusion within that time, and then sum over n slots
-      sum (map (\i -> probNoLeader f' i * diffusionProbDensity d' s i) [1..n])
-        where
-          diffusionProbDensity d'' s' i' = 
-            successWithin d'' (fromIntegral i' * s') - 
-            successWithin d'' (fromIntegral (i' - 1) * s')
+    -- we accumulate probability over a finite number of slots, determined either by
+    -- the latest possible arrival time or by an arbitrary maximum number of slots
+    probNoFork = case deadline d of
+      -- arbitrarily late arrivals are possible: sum up to an arbitrary cutoff
+      Abandoned -> accumulateProbability 100 -- ToDo: should depend on f
+      -- t is the latest arrival time with non-zero probability; no mass lies beyond it.
+      -- Any failure probability of d never contributes, so it counts as a fork.
+      Occurs t  -> accumulateProbability (ceiling (t/slotTime))
+
+    -- m is the number of slots that must be empty for a block arriving in
+    -- (m*slotTime, (m+1)*slotTime] to reach the next leader in time; slotMass m is the
+    -- probability of arrival in that slot
+    accumulateProbability n =
+      sum [ probNoLeader f m * slotMass m | m <- [0 .. n] ]
+      where
+        slotMass 0 = successWithin d slotTime                -- includes D = 0
+        slotMass m = successWithin d (fromIntegral (m + 1) * slotTime)
+                   - successWithin d (fromIntegral m * slotTime)
 \end{code}
 where $f$ is the active slot fraction, and $d$ is the \dq{} for the transfer delay.
 Thus, for instance, the probability of a fork in a network of 2500 nodes of degree 10, with
-a block size of 64kB, and active slot fraction of $0.01$ and a slot time of 2s, is 
+a block size of 64kB, and the Cardano mainnet parameters of an active slot fraction of $1/20$ and
+a slot time of 1s, is
 %options ghci
-\eval{fromRational (forkProbability 0.02 2 (blendedDelayNode10 B64)) :: Double}.
+\eval{fromRational (forkProbability (1/20) 1 (blendedDelayNode10 B64)) :: Double}.
+Note that this considers only the transfer delay, and ignores slot battles (multiple leaders in the same slot).
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
