@@ -100,7 +100,7 @@ Ouroboros Praos uses the distribution of `stake' in the system (i.e. the value o
 controlled by each node) to randomly determine which node (if any) is authorised to 
 produce a new block in the chain during a specific time interval (a `slot');
 the more stake a node controls, the more likely it is to be authorised to produce a block
-(see Appending \ref{sec:praos_leadership}).
+(see Appendix \ref{sec:praos_leadership}).
 It is important that the selected block-producing node has a copy of the 
 most recently produced block, so that the new block can correctly extend the previous chain,
 otherwise there is a fork in the chain, meaning that at least one of the blocks will be discarded, wasting work.
