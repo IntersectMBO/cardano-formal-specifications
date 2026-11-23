@@ -352,7 +352,7 @@ It can be seen that for a block to have a high probability of arriving within $2
 the block size must be not much more than $64$kB.
 
 We can confirm the effect of block size on the probability of a fork by combining the \dq{}
-for the transfer delay with the probability of an $n$-slot gap in block production from Appendix 
+for the transfer delay with the probability of an $m$-slot gap in block production from Appendix
 \ref{sec:praos_leadership}. The probability of avoiding a fork is the sum of the probabilities of
 avoiding a fork in each of the possible slots:
 \begin{equation*}
