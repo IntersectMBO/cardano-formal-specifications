@@ -120,11 +120,11 @@ a blockchain setting for mitigating certain adversarial behaviours).
 In each time slot, a randomly-chosen node may generate a block, and we are interested in 
 the probability that the next randomly-chosen node has received that block before it generates the 
 next block. Since the granting of permission to generate a block is random, the time between
-block generations is exponentially distributed.
+block generations is geometrically distributed.
 In Cardano, slots are one second long and blocks are produced every $20$ seconds on average.
 
 Given that the newly generated block takes some time to propagate through the network to the next 
-block-producing node, a fork will be avoided if and only if there is no leader elected in the intervening period.
+block-producing node, a fork\footnote{Slot battles (multiple leaders in the same slot) are ignored.} will be avoided if and only if there is no leader elected in the intervening period.
 The probability of this is computed in Appendix \ref{sec:praos_leadership}.
 If the probability that the diffusion completes during slot $m$ (counting the slot in which the block is forged as slot $0$) is $P^D_m$, and the probability of $m$
 successive slots with no leader is $P^{NL}_m$, then the probability $P^{NF}$ of avoiding a fork is:
@@ -353,12 +353,12 @@ the block size must be not much more than $64$kB.
 
 We can confirm the effect of block size on the probability of a fork by combining the \dq{}
 for the transfer delay with the probability of an $m$-slot gap in block production from Appendix
-\ref{sec:praos_leadership}. The probability of avoiding a fork is the sum of the probabilities of
-avoiding a fork in each of the possible slots:
+\ref{sec:praos_leadership}. The probability of avoiding a fork
+is the sum of the probabilities of avoiding a fork in each of the possible slots:
 \begin{equation*}
 P^{NF} = \sum_{m=0}^{\infty} P^D_m \times P^{NL}_m
 \end{equation*}
-where $P^D_m = \Pr[m T_s < D \le (m+1) T_s]$ is the probability of the block arriving during
+where $P^D_m = \Pr[m T_s < D \le (m+1) T_s]$ (for $m = 0$: $\Pr[D \le T_s]$) is the probability of the block arriving during
 slot $m$, with $D$ the diffusion time measured from the start of the slot in which the block is
 forged and $T_s$ the slot duration, and $P^{NL}_m$ is the probability of no leader being
 elected in $m$ slots. The probability of a fork is one minus this.
@@ -394,7 +394,6 @@ a block size of 64kB, and the Cardano mainnet parameters of an active slot fract
 a slot time of 1s, is
 %options ghci
 \eval{fromRational (forkProbability (1/20) 1 (blendedDelayNode10 B64)) :: Double}.
-Note that this considers only the transfer delay, and ignores slot battles (multiple leaders in the same slot).
 
 \subsection{Verification Before Forwarding}
 So far, we have only considered the time taken to transfer a block from one node to another.
