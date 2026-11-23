@@ -794,7 +794,7 @@ In general, the probability that stakeholder $U_i$ is \textit{not} the leader is
 and so the probability that \textit{no} stakeholder is the leader (i.e. we have an empty slot) is
 given by multiplying the probabilities (since each node decides independently whether it is the leader):
 \begin{equation}
-P_\text{no leader} = \prod_{i=1}^{N}(1-f)^{\alpha_i} = (1-f)^{\sum_{i=0}^N\alpha_i} = 1 - f
+P_\text{no leader} = \prod_{i=1}^{N}(1-f)^{\alpha_i} = (1-f)^{\sum_{i=1}^N\alpha_i} = 1 - f
 \end{equation}
 
 (Hence the definition of $f$ as the active slot fraction). 
